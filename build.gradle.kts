@@ -25,7 +25,7 @@ plugins {
     id("com.github.jk1.dependency-license-report") version "1.16"
 }
 
-group = "org.crolang-p2p"
+group = "io.github.crolang-p2p"
 version = projectVersion
 
 kotlin {
@@ -114,7 +114,7 @@ publishing {
     publications {
         create<MavenPublication>("crolang-p2p-node-jvm") {
             from(components["java"])
-            groupId = "org.crolang-p2p"
+            groupId = "io.github.crolang-p2p"
             artifactId = "crolang-p2p-node-jvm"
             version = projectVersion
 
