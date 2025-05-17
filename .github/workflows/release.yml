@@ -31,17 +31,48 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build jar and artifacts
-        run: ./gradlew build javadocJar sourcesJar generateLicenseReport
+      - name: Build
+        run: ./gradlew build
+
+      - name: Import GPG key
+        run: |
+          echo "$GPG_PRIVATE_KEY" > private.asc
+          gpg --batch --import private.asc
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSWORD" \
+            --output secring.gpg --export-secret-keys "$GPG_KEY_ID"
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSWORD: ${{ secrets.GPG_PASSWORD }}
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+
+      - name: Publish to Maven Central
+        run: |
+          ./gradlew publishAndReleaseToMavenCentral \
+            -Psigning.keyId=$GPG_KEY_ID \
+            -Psigning.password=$GPG_PASSWORD \
+            -Psigning.secretKeyRingFile=secring.gpg \
+            -PmavenCentralUsername=$MAVEN_CENTRAL_USERNAME \
+            -PmavenCentralPassword=$MAVEN_CENTRAL_PASSWORD \
+            --no-configuration-cache
+
+        env:
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          GPG_PASSWORD: ${{ secrets.GPG_PASSWORD }}
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
+      - name: Generate license report
+        run: ./gradlew generateLicenseReport
 
       - name: Rename license report
         run: mv build/reports/dependency-license/index.html build/reports/dependency-license/dependencies_report.html
 
-      - name: Upload jar and license report to GitHub Release
+      - name: Upload jar, jar.asc and license report to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             build/libs/*.jar
+            build/libs/*.jar.asc
             build/reports/dependency-license/dependencies_report.html
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
