@@ -1,3 +1,4 @@
+import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.GradleException
 import java.io.ByteArrayOutputStream
@@ -23,6 +24,7 @@ plugins {
     `maven-publish`
     id("org.jetbrains.dokka") version "1.8.10"
     id("com.github.jk1.dependency-license-report") version "1.16"
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
 group = "io.github.crolang-p2p"
@@ -83,6 +85,10 @@ tasks {
         }
     }
 
+    named<org.jetbrains.dokka.gradle.DokkaTask>("dokkaHtml") {
+        dependsOn("generateBuildConfig")
+    }
+
     val dokkaJavadoc by getting(org.jetbrains.dokka.gradle.DokkaTask::class) {
         dependsOn("generateBuildConfig")
         outputDirectory.set(buildDir.resolve("dokkaJavadoc"))
@@ -92,6 +98,7 @@ tasks {
             }
         }
     }
+
 
     val javadocJar by creating(Jar::class) {
         archiveClassifier.set("javadoc")
@@ -107,21 +114,47 @@ tasks {
 
 }
 
-publishing {
-    repositories {
-        mavenLocal()
-    }
-    publications {
-        create<MavenPublication>("crolang-p2p-node-jvm") {
-            from(components["java"])
-            groupId = "io.github.crolang-p2p"
-            artifactId = "crolang-p2p-node-jvm"
-            version = projectVersion
+mavenPublishing {
+    coordinates(
+        groupId = "io.github.crolang-p2p",
+        artifactId = "crolang-p2p-node-jvm",
+        version = projectVersion
+    )
 
-            artifact(tasks["javadocJar"])
-            artifact(tasks["sourcesJar"])
+    // Configure POM metadata for the published artifact
+    pom {
+        name.set("crolang-p2p-node-jvm")
+        description.set("Kotlin/Java client for CrolangP2P")
+        inceptionYear.set("2025")
+        url.set("https://github.com/crolang-p2p/crolang-p2p-node-jvm")
+
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0")
+            }
+        }
+
+        // Specify developers information
+        developers {
+            developer {
+                id.set("Tale152")
+                name.set("Alessandro Talmi")
+                email.set("alessandro.talmi@gmail.com")
+            }
+        }
+
+        // Specify SCM information
+        scm {
+            url.set("https://github.com/crolang-p2p/crolang-p2p-node-jvm")
         }
     }
+
+    // Configure publishing to Maven Central
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+
+    // Enable GPG signing for all publications
+    signAllPublications()
 }
 
 tasks.register("printBuildSummary") {
