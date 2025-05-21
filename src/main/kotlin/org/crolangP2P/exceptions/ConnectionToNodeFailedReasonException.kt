@@ -127,4 +127,13 @@ sealed class ConnectionToNodeFailedReasonException(
         private fun readResolve(): Any = ConnectionsNotAllowedOnRemoteNode
     }
 
+    /**
+     * Exception thrown when the connection attempt was not authorized by the broker.
+     */
+    data object UnauthorizedConnection : ConnectionToNodeFailedReasonException(
+        P2PConnectionFailedReason.UNAUTHORIZED_CONNECTION
+    ) {
+        private fun readResolve(): Any = UnauthorizedConnection
+    }
+
 }

@@ -37,6 +37,7 @@ import internal.events.data.abstractions.SocketMsgType.Companion.CONNECTION_REFU
 import internal.events.data.abstractions.SocketMsgType.Companion.ICE_CANDIDATES_EXCHANGE_INITIATOR_TO_RESPONDER
 import internal.events.data.abstractions.SocketMsgType.Companion.ICE_CANDIDATES_EXCHANGE_RESPONDER_TO_INITIATOR
 import internal.events.data.abstractions.SocketMsgType.Companion.INCOMING_CONNECTIONS_NOT_ALLOWED
+import internal.events.data.abstractions.SocketResponses
 import internal.events.data.adapters.AgnosticRTCSessionDescription
 import internal.node.NodeState
 import internal.node.ResponderNode
@@ -357,7 +358,7 @@ internal class OnLocalDescriptionSetSuccessResponderNode(
                 msg.sessionId = node.sessionId
                 msg.sessionDescription = it
                 node.sendSocketMsg(CONNECTION_ACCEPTANCE, msg) { response ->
-                    if(!response){
+                    if(!SocketResponses.isOk(response)){
                         EventLoop.postEvent(
                             OnSocketMsgBrokerNegativeResponseResponderNode(remoteNodeId, CONNECTION_ACCEPTANCE)
                         )
