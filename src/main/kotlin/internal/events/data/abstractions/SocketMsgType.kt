@@ -73,5 +73,15 @@ internal class SocketMsgType {
          */
         const val ICE_CANDIDATES_EXCHANGE_RESPONDER_TO_INITIATOR = "ICE_CANDIDATES_EXCHANGE_RESPONDER_TO_INITIATOR"
 
+        /**
+         * Message type used to relay direct messages between nodes via the Broker's WebSocket relay.
+         *
+         * This message type is used when a [CrolangNode] wants to send arbitrary data to another node over a logical channel.
+         * The broker receives the message and relays it to the target node, enabling node-to-node communication even if they are not directly connected.
+         *
+         * Used in conjunction with [SocketDirectMsg] for exchanging messages between nodes.
+         */
+        const val SOCKET_MSG_EXCHANGE = "SOCKET_MSG_EXCHANGE"
+
     }
 }

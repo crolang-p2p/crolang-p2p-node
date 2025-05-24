@@ -41,6 +41,22 @@ internal object SharedStore {
     private val executor = Executors.newCachedThreadPool()
 
     /**
+     * Map of callbacks for handling direct messages received via the Broker's WebSocket relay.
+     *
+     * The key is the logical channel name, and the value is a function invoked when a message is received on that channel.
+     * Each callback receives the sender node ID (`from`) and the message content (`msg`).
+     *
+     * This structure enables nodes to register handlers for specific channels, allowing for flexible and modular message processing
+     * when using the SOCKET_MSG_EXCHANGE mechanism (see [SocketMsgType.SOCKET_MSG_EXCHANGE] and [SocketDirectMsg]).
+     *
+     * The callbacks are typically set during the Broker connection phase (see CrolangP2P) and are invoked automatically
+     * when a direct message is relayed by the Broker.
+     *
+     * If not provided by the user, this map is empty by default and no callbacks will be invoked for incoming messages.
+     */
+    var onNewSocketMsgCallbacks: Map<String, (from: String, msg: String) -> Unit> = emptyMap()
+
+    /**
      * Container for the Broker peers (initiator and responder nodes) involved in the current session.
      * This property holds the initiator and responder nodes, making them available globally for the current Broker session.
      */
@@ -120,6 +136,7 @@ internal object SharedStore {
     fun flush() {
         //logger = CrolangLogger(LoggingOptions()) // Re-initialize logger
         reconnectionAttempts = 0
+        onNewSocketMsgCallbacks = emptyMap()
         onConnectionToBrokerSettings = Optional.empty()
         localNodeId = "Uninitialized" // Reset local node ID to default
         socketIO = Optional.empty() // Clear socket connection

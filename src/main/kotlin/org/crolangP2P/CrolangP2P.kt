@@ -20,7 +20,10 @@ import internal.broker.BrokerSocketCreator.createSocketIO
 import internal.broker.OnConnectionToBrokerSettings
 import internal.events.data.AreNodesConnectedToBrokerMsg
 import internal.events.data.AreNodesConnectedToBrokerMsgResponse
+import internal.events.data.SocketDirectMsg
 import internal.events.data.abstractions.SocketMsgType.Companion.ARE_NODES_CONNECTED_TO_BROKER
+import internal.events.data.abstractions.SocketMsgType.Companion.SOCKET_MSG_EXCHANGE
+import internal.events.data.abstractions.SocketResponses
 import internal.node.NodeState
 import internal.utils.AwaitAsyncEventGuard
 import internal.utils.CrolangLogger
@@ -33,6 +36,7 @@ import internal.utils.SharedStore.incomingCrolangNodesCallbacks
 import internal.utils.SharedStore.localNodeId
 import internal.utils.SharedStore.logger
 import internal.utils.SharedStore.onConnectionToBrokerSettings
+import internal.utils.SharedStore.onNewSocketMsgCallbacks
 import internal.utils.SharedStore.parser
 import internal.utils.SharedStore.settings
 import internal.utils.SharedStore.socketIO
@@ -41,6 +45,7 @@ import org.crolangP2P.exceptions.AllowIncomingConnectionsException
 import org.crolangP2P.exceptions.ConnectToBrokerException
 import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
 import org.crolangP2P.exceptions.RemoteNodesConnectionStatusCheckException
+import org.crolangP2P.exceptions.SendSocketMsgException
 import java.util.*
 
 
@@ -137,6 +142,58 @@ object CrolangP2P {
         }
 
         /**
+         * Sends a message to a remote node via the Broker using WebSocket relay.
+         *
+         * @param id The ID of the remote node to send the message to.
+         * @param channel The channel on which to send the message.
+         * @param msg The message to send (optional). If not provided, an empty string will be sent.
+         * @return A Result indicating success or failure. On failure, see [SendSocketMsgException].
+         *
+         * @see SendSocketMsgException
+         */
+        fun sendSocketMsg(id: String, channel: String, msg: String?): Result<Unit>{
+            if(!isLocalNodeConnectedToBroker()){
+                return Result.failure(SendSocketMsgException.NotConnectedToBroker)
+            } else if (channel.isEmpty()){
+                return Result.failure(SendSocketMsgException.EmptyChannel)
+            } else if(id.isEmpty()){
+                return Result.failure(SendSocketMsgException.EmptyId)
+            } else if(id === localNodeId){
+                return Result.failure(SendSocketMsgException.TriedToSendMsgToSelf)
+            }
+
+            var err: String? = null
+            val guard = AwaitAsyncEventGuard(UUID.randomUUID().toString())
+            guard.startNewCountdown()
+            socketIO.get().emit(
+                SOCKET_MSG_EXCHANGE,
+                parser.toJson(SocketDirectMsg(localNodeId, id, channel, msg ?: "")),
+                Ack { args ->
+                    if(args.size != 1 || args[0] == null || args[0] !is String){
+                        err = SocketResponses.ERROR
+                        guard.stepDown()
+                        return@Ack
+                    }
+                    val response = args[0] as String
+                    if(SocketResponses.ALL.contains(response)){
+                        if(!SocketResponses.isOk(response)){
+                            err = response
+                        }
+                    } else {
+                        err = SocketResponses.ERROR
+                    }
+                    guard.stepDown()
+                }
+            )
+            guard.await()
+            return if(err == null){
+                Result.success(Unit)
+            } else {
+                Result.failure(SendSocketMsgException.fromMessage(err!!))
+            }
+        }
+
+        /**
          * Connects to the Crolang Broker using the provided broker address and Node ID.
          * This method initiates a connection attempt to the Broker and handles the connection process.
          *
@@ -148,6 +205,7 @@ object CrolangP2P {
         fun connectToBroker(
             brokerAddr: String,
             nodeId: String,
+            onNewSocketMsg: Map<String, (from: String, msg: String) -> Unit> = emptyMap(),
             additionalParameters: BrokerConnectionAdditionalParameters = BrokerConnectionAdditionalParameters()
         ): Result<Unit> {
             if(socketIO.isPresent){
@@ -159,6 +217,7 @@ object CrolangP2P {
             if(!runtimeDependencyResolved){
                 return Result.failure(ConnectToBrokerException.UnsupportedArchitecture)
             }
+            onNewSocketMsgCallbacks = onNewSocketMsg
             brokerLifecycleCallbacks = additionalParameters.lifecycleCallbacks
             logger = CrolangLogger(additionalParameters.logging)
             settings = additionalParameters.settings
@@ -455,7 +514,11 @@ object CrolangP2P {
         fun connectToBroker(
             brokerAddr: String, nodeId: String, additionalParameters: BrokerConnectionAdditionalParameters
         ) {
-            voidKotlinResultCall { Kotlin.connectToBroker(brokerAddr, nodeId, additionalParameters) }
+            voidKotlinResultCall { Kotlin.connectToBroker(
+                brokerAddr,
+                nodeId,
+                additionalParameters = additionalParameters
+            ) }
         }
 
         /**
@@ -713,6 +776,34 @@ object CrolangP2P {
             }
         }
 
+        /**
+         * Sends a message to a remote node via the Broker using WebSocket relay.
+         *
+         * @param id The ID of the remote node to send the message to.
+         * @param channel The channel on which to send the message.
+         * @param msg The message to send.
+         * @throws SendSocketMsgException if the message could not be sent (e.g., not connected to the Broker, empty channel or id, or trying to send a message to self).
+         *
+         * @see SendSocketMsgException
+         */
+        @JvmStatic
+        fun sendSocketMsg(id: String, channel: String, msg: String) {
+            return nonVoidKotlinResultCall { Kotlin.sendSocketMsg(id, channel, msg) }
+        }
+
+        /**
+         * Sends an empty message to a remote node via the Broker using WebSocket relay.
+         *
+         * @param id The ID of the remote node to send the message to.
+         * @param channel The channel on which to send the message.
+         * @throws SendSocketMsgException if the message could not be sent (e.g., not connected to the Broker, empty channel or id, or trying to send a message to self).
+         *
+         * @see SendSocketMsgException
+         */
+        @JvmStatic
+        fun sendSocketMsg(id: String, channel: String) {
+            return nonVoidKotlinResultCall { Kotlin.sendSocketMsg(id, channel, "") }
+        }
 
         private fun voidKotlinResultCall(call: () -> Result<Unit>) {
             call().onFailure { throw it }

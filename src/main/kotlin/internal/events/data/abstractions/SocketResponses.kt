@@ -16,6 +16,18 @@
 
 package internal.events.data.abstractions
 
+/**
+ * Contains the possible response codes used in socket message exchanges between nodes and the Broker.
+ *
+ * These responses are used to indicate the outcome of operations such as relaying direct messages or checking node status.
+ *
+ * - [OK]: The operation was successful.
+ * - [ERROR]: A generic error occurred during the operation.
+ * - [UNAUTHORIZED]: The sender is not authorized to perform the requested operation (e.g., sending a message to a node).
+ * - [NOT_CONNECTED]: The target node is not connected to the Broker.
+ *
+ * The [ALL] set contains all possible response codes, and [isOk] is a utility to check for a successful response.
+ */
 internal object SocketResponses {
     const val OK = "OK"
     const val ERROR = "ERROR"
