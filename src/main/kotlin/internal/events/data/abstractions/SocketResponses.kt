@@ -25,6 +25,7 @@ package internal.events.data.abstractions
  * - [ERROR]: A generic error occurred during the operation.
  * - [UNAUTHORIZED]: The sender is not authorized to perform the requested operation (e.g., sending a message to a node).
  * - [NOT_CONNECTED]: The target node is not connected to the Broker.
+ * - [DISABLED]: The operation is disabled due to Broker's configuration.
  *
  * The [ALL] set contains all possible response codes, and [isOk] is a utility to check for a successful response.
  */
@@ -33,8 +34,9 @@ internal object SocketResponses {
     const val ERROR = "ERROR"
     const val UNAUTHORIZED = "UNAUTHORIZED"
     const val NOT_CONNECTED = "NOT_CONNECTED"
+    const val DISABLED = "DISABLED"
 
-    val ALL: Set<String> = setOf(OK, ERROR, UNAUTHORIZED, NOT_CONNECTED)
+    val ALL: Set<String> = setOf(OK, ERROR, UNAUTHORIZED, NOT_CONNECTED, DISABLED)
 
     fun isOk(response: String): Boolean = response == OK
 }

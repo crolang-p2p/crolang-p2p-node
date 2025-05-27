@@ -84,10 +84,18 @@ sealed class SendSocketMsgException(message: String) : Exception(message) {
         private fun readResolve(): Any = EmptyChannel
     }
 
+    /**
+     * Thrown when the Broker has disabled WebSocket relay functionality due to configuration settings.
+     */
+    data object Disabled : SendSocketMsgException("DISABLED") {
+        private fun readResolve(): Any = Disabled
+    }
+
     internal companion object {
         fun fromMessage(msg: String): SendSocketMsgException = when (msg) {
             SocketResponses.UNAUTHORIZED -> UnauthorizedToContactRemoteNode
             SocketResponses.NOT_CONNECTED -> RemoteNodeNotConnectedToBroker
+            SocketResponses.DISABLED -> Disabled
             else -> UnknownError
         }
     }

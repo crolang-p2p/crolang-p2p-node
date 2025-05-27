@@ -338,8 +338,10 @@ internal class OnConnectionAttemptNotDeliveredInitiatorNode(
             node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.REMOTE_NODE_NOT_CONNECTED_TO_BROKER
         } else if(response == SocketResponses.UNAUTHORIZED) {
             node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.UNAUTHORIZED_CONNECTION
+        } else if(response == SocketResponses.DISABLED) {
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.UNAUTHORIZED_CONNECTION
         } else {
-            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.CONNECTION_NEGOTIATION_ERROR
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.DISABLED
         }
         node.forceClose(NodeState.NEGOTIATION_ERROR)
     }
