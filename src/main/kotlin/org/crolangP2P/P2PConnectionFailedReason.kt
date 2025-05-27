@@ -63,7 +63,15 @@ enum class P2PConnectionFailedReason {
     /**
      * The remote Node does not allow incoming connections.
      */
-    CONNECTIONS_NOT_ALLOWED_ON_REMOTE_NODE;
+    CONNECTIONS_NOT_ALLOWED_ON_REMOTE_NODE,
+    /**
+     * The connection attempt was not authorized by the broker.
+     */
+    UNAUTHORIZED_CONNECTION,
+    /**
+     * P2P connections are disabled in the Broker configuration.
+     */
+    DISABLED;
 
     /**
      * Converts the current instance of [P2PConnectionFailedReason] to a [ConnectionToNodeFailedReasonException].
@@ -81,6 +89,8 @@ enum class P2PConnectionFailedReason {
             CONNECTION_NEGOTIATION_ERROR -> ConnectionToNodeFailedReasonException.ConnectionNegotiationError
             CONNECTION_REFUSED_BY_REMOTE_NODE -> ConnectionToNodeFailedReasonException.ConnectionRefusedByRemoteNode
             CONNECTIONS_NOT_ALLOWED_ON_REMOTE_NODE -> ConnectionToNodeFailedReasonException.ConnectionsNotAllowedOnRemoteNode
+            UNAUTHORIZED_CONNECTION -> ConnectionToNodeFailedReasonException.UnauthorizedConnection
+            DISABLED -> ConnectionToNodeFailedReasonException.Disabled
         }
     }
 }

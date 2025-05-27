@@ -34,6 +34,7 @@ import internal.events.data.abstractions.SocketMsgType.Companion.CONNECTION_ACCE
 import internal.events.data.abstractions.SocketMsgType.Companion.CONNECTION_ATTEMPT
 import internal.events.data.abstractions.SocketMsgType.Companion.ICE_CANDIDATES_EXCHANGE_INITIATOR_TO_RESPONDER
 import internal.events.data.abstractions.SocketMsgType.Companion.ICE_CANDIDATES_EXCHANGE_RESPONDER_TO_INITIATOR
+import internal.events.data.abstractions.SocketResponses
 import internal.events.data.adapters.AgnosticRTCSessionDescription
 import org.crolangP2P.P2PConnectionFailedReason
 import internal.node.InitiatorNode
@@ -302,9 +303,9 @@ internal class OnOfferSetSuccessfullyInitiatorNode(
                 msg.from = localNodeId
                 msg.to = remoteNodeId
                 msg.sessionId = node.sessionId
-                node.sendSocketMsg(CONNECTION_ATTEMPT, msg) { ack: Boolean ->
-                    if(!ack){
-                        EventLoop.postEvent(OnConnectionAttemptNotDeliveredInitiatorNode(remoteNodeId))
+                node.sendSocketMsg(CONNECTION_ATTEMPT, msg) { response: String ->
+                    if(!SocketResponses.isOk(response)){
+                        EventLoop.postEvent(OnConnectionAttemptNotDeliveredInitiatorNode(remoteNodeId, response))
                     }
                 }
             },
@@ -325,14 +326,23 @@ internal class OnOfferSetSuccessfullyInitiatorNode(
  * but the message is not delivered to the remote node, meaning that the remote node is not connected to the Broker.
  *
  * @param remoteNodeId The ID of the remote responder node that the initiator node is trying to connect to.
+ * @param response The response message received from the Broker indicating the failure.
  */
 internal class OnConnectionAttemptNotDeliveredInitiatorNode(
-    remoteNodeId: String
+    remoteNodeId: String, private val response: String
 ) : InitiatorNodeAbstractEvent(remoteNodeId) {
 
     override fun onNodeFound(node: InitiatorNode) {
-        logger.regularErr("$remoteNodeId is not connected to Broker")
-        node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.REMOTE_NODE_NOT_CONNECTED_TO_BROKER
+        logger.regularErr("could not deliver $CONNECTION_ATTEMPT to $remoteNodeId: $response")
+        if(response == SocketResponses.NOT_CONNECTED) {
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.REMOTE_NODE_NOT_CONNECTED_TO_BROKER
+        } else if(response == SocketResponses.UNAUTHORIZED) {
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.UNAUTHORIZED_CONNECTION
+        } else if(response == SocketResponses.DISABLED) {
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.UNAUTHORIZED_CONNECTION
+        } else {
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.DISABLED
+        }
         node.forceClose(NodeState.NEGOTIATION_ERROR)
     }
 }

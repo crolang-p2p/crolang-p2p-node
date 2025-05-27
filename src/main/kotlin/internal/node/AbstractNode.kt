@@ -34,6 +34,7 @@ import internal.events.data.PeerMsg
 import internal.events.data.PeerMsgPart
 import internal.events.data.PeerMsgPartParsable
 import internal.events.data.adapters.IceCandidateAdapter
+import internal.events.data.abstractions.SocketResponses
 import internal.utils.EventLoop
 import internal.utils.JsonParser
 import internal.utils.SharedStore.executeCallbackOnExecutor
@@ -154,7 +155,7 @@ internal abstract class AbstractNode(
      * @param msg The message to be sent.
      * @param onBrokerResponse The callback to be called when the broker responds.
      */
-    fun sendSocketMsg(type: String, msg: Any, onBrokerResponse: (ack: Boolean) -> Any){
+    fun sendSocketMsg(type: String, msg: Any, onBrokerResponse: (response: String) -> Any){
         if(!isNegotiating(state)){
             logger.debugErr("Tried to send a socket msg to remote node $remoteNodeId while the CrolangNode is not negotiating")
         } else if(socketIO.isEmpty){
@@ -164,11 +165,17 @@ internal abstract class AbstractNode(
         } else {
             logger.debugInfo("sending $type to remote node $remoteNodeId")
             socketIO.get().emit(type, parser.toJson(msg), Ack { args ->
-                if(args.size != 1 || args[0] !is Boolean){
-                    onBrokerResponse(false)
+                val response = if(args.size != 1 || args[0] !is String) {
+                    SocketResponses.ERROR
                 } else {
-                    onBrokerResponse(args[0] as Boolean)
+                    val resp = args[0] as String
+                    if (SocketResponses.ALL.contains(resp)) {
+                        resp
+                    } else {
+                        SocketResponses.ERROR
+                    }
                 }
+                onBrokerResponse(response)
             })
         }
     }
@@ -181,7 +188,7 @@ internal abstract class AbstractNode(
      */
     fun sendIceCandidatesExchangeMsg(type: String, msg: ParsableIceCandidateMsg){
         sendSocketMsg(type, msg){ response ->
-            if(!response){
+            if(!SocketResponses.isOk(response)){
                 EventLoop.postEvent(
                     concreteNodeEventParameters.onP2PIceCandidatesExchangeMsgBrokerNegativeResponseReceived()
                 )

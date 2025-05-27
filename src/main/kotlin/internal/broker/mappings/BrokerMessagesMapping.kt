@@ -64,6 +64,10 @@ internal object BrokerMessagesMapping {
         registerSpecificMsgListener<ParsableIceCandidateMsg, IceCandidateMsg>(
             socket, SocketMsgType.ICE_CANDIDATES_EXCHANGE_RESPONDER_TO_INITIATOR
         ){ EventLoop.postEvent(OnIncomingP2PIceCandidatesExchangeMsgInitiatorNode(it)) }
+
+        registerSpecificMsgListener<ParsableSocketDirectMsg, SocketDirectMsg>(
+            socket, SocketMsgType.SOCKET_MSG_EXCHANGE
+        ){ EventLoop.postEvent(OnSocketDirectMsgReceived(it)) }
     }
 
     /**
