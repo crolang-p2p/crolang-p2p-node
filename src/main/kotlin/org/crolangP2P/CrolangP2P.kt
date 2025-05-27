@@ -218,6 +218,25 @@ object CrolangP2P {
          *
          * @param brokerAddr The address of the Broker to connect to.
          * @param nodeId The ID of the local node.
+         * @param additionalParameters Additional parameters for the connection, including logging options, settings and lifecycle callbacks.
+         * @return A Result indicating success or failure of the connection attempt.
+         *
+         * @see ConnectToBrokerException
+         */
+        fun connectToBroker(
+            brokerAddr: String,
+            nodeId: String,
+            additionalParameters: BrokerConnectionAdditionalParameters
+        ): Result<Unit> {
+            return connectToBroker(brokerAddr, nodeId, emptyMap(), additionalParameters)
+        }
+
+        /**
+         * Connects to the Crolang Broker using the provided broker address and Node ID.
+         * This method initiates a connection attempt to the Broker and handles the connection process.
+         *
+         * @param brokerAddr The address of the Broker to connect to.
+         * @param nodeId The ID of the local node.
          * @return A Result indicating success or failure of the connection attempt.
          *
          * @see ConnectToBrokerException
