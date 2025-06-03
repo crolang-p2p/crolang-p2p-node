@@ -321,7 +321,7 @@ internal abstract class AbstractNode(
         logger.debugInfo("split P2P message to $remoteNodeId (msg id: ${peerMsg.msgId}) into ${parts.size} parts")
         val dataChannelInstance = dataChannel.get()
         if(parts.size == 1){
-            while(dataChannelInstance.bufferedAmount > 0) {
+            while(dataChannelInstance.bufferedAmount > MAX_BUFFERED_AMOUNT) {
                 Thread.sleep(1)
             }
             dataChannel.get().send(RTCDataChannelBuffer(
