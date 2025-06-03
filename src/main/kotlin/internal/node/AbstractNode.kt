@@ -50,8 +50,8 @@ import org.crolangP2P.CrolangNode
 import java.nio.ByteBuffer
 import java.util.*
 
-private const val DEFAULT_PAYLOAD_SIZE_BYTES: Int = 20000
-private const val MAX_BUFFERED_AMOUNT = 256 * 1024 // 256 KB
+private const val DEFAULT_PAYLOAD_SIZE_BYTES: Int = 15000
+private const val MAX_BUFFERED_AMOUNT = 512 * 1024 // 512 KB
 
 /**
  * Represents an abstract node in a peer-to-peer (P2P) connection.
@@ -340,7 +340,6 @@ internal abstract class AbstractNode(
                 }
                 logger.debugInfo("sending part ${it.part}/${it.total} of P2P message to $remoteNodeId (msg id: ${peerMsg.msgId})")
                 dataChannelInstance.send(buffer)
-                //Thread.sleep(1)
             }
             logger.debugInfo("sent all P2P message parts to $remoteNodeId (msg id: ${peerMsg.msgId})")
         }
