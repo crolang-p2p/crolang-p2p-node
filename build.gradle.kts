@@ -52,6 +52,8 @@ dependencies {
     implementation("org.json:json:20250107")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("dev.onvoid.webrtc:webrtc-java:0.10.0")
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
 }
 
 tasks.register("addLicenseHeader") {
@@ -113,7 +115,34 @@ tasks {
         dependsOn("generateBuildConfig")
     }
 
-
+    test {
+        useJUnitPlatform()
+        doFirst {
+            val checkContainer = "docker ps -q -f name=CrolangP2PBroker"
+            val isRunning = ByteArrayOutputStream()
+            exec {
+                commandLine = listOf("sh", "-c", checkContainer)
+                standardOutput = isRunning
+                isIgnoreExitValue = true
+            }
+            if (isRunning.toString().trim().isEmpty()) {
+                println("[TEST SETUP] Starting container Docker CrolangP2PBroker...")
+                exec {
+                    commandLine = listOf("docker", "run", "--rm", "-d", "--name", "CrolangP2PBroker", "-p", "8080:8080", "crolangp2p/broker")
+                }
+                Thread.sleep(3000)
+            } else {
+                println("[TEST SETUP] Il container CrolangP2PBroker è già in esecuzione.")
+            }
+        }
+        doLast {
+            println("[TEST TEARDOWN] Stopping container Docker CrolangP2PBroker...")
+            exec {
+                commandLine = listOf("docker", "stop", "CrolangP2PBroker")
+                isIgnoreExitValue = true
+            }
+        }
+    }
 }
 
 mavenPublishing {
