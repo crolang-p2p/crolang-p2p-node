@@ -20,6 +20,7 @@ import dev.onvoid.webrtc.RTCConfiguration
 import dev.onvoid.webrtc.RTCDataChannelBuffer
 import dev.onvoid.webrtc.RTCDataChannelInit
 import dev.onvoid.webrtc.RTCDataChannelObserver
+import dev.onvoid.webrtc.RTCPriorityType
 import internal.events.OnConnectionAttemptTimeoutInitiatorNode
 import internal.events.OnDataChannelStateChangeInitiatorNode
 import internal.events.OnIceCandidateReadyToBeSentInitiatorNode
@@ -107,7 +108,11 @@ internal class InitiatorNode(
 
     init {
         // Creates and registers a data channel for communication with the remote node, associating the Initiator events
-        val createdDataChannel = peer.createDataChannel("", RTCDataChannelInit())
+        val conf = RTCDataChannelInit()
+        conf.ordered = true
+        conf.maxRetransmits = -1
+        conf.priority = RTCPriorityType.HIGH
+        val createdDataChannel = peer.createDataChannel("", conf)
         createdDataChannel.registerObserver(object : RTCDataChannelObserver {
 
             override fun onStateChange() {

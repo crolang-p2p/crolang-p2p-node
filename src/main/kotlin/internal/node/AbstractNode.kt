@@ -26,17 +26,16 @@ import dev.onvoid.webrtc.RTCDataChannelState
 import dev.onvoid.webrtc.RTCIceCandidate
 import dev.onvoid.webrtc.RTCPeerConnection
 import dev.onvoid.webrtc.RTCPeerConnectionState
-import io.socket.client.Ack
 import internal.events.data.IceCandidateMsg
 import internal.events.data.IncomingMultipartP2PMsg
 import internal.events.data.ParsableIceCandidateMsg
 import internal.events.data.PeerMsg
 import internal.events.data.PeerMsgPart
 import internal.events.data.PeerMsgPartParsable
-import internal.events.data.adapters.IceCandidateAdapter
 import internal.events.data.abstractions.SocketResponses
+import internal.events.data.adapters.IceCandidateAdapter
 import internal.utils.EventLoop
-import internal.utils.JsonParser
+import internal.utils.SharedStore.cborParser
 import internal.utils.SharedStore.executeCallbackOnExecutor
 import internal.utils.SharedStore.localNodeId
 import internal.utils.SharedStore.logger
@@ -44,12 +43,15 @@ import internal.utils.SharedStore.parser
 import internal.utils.SharedStore.settings
 import internal.utils.SharedStore.socketIO
 import internal.utils.TimeoutTimer
-import org.crolangP2P.CrolangNode
+import io.socket.client.Ack
+import kotlinx.serialization.ExperimentalSerializationApi
 import org.crolangP2P.BasicCrolangNodeCallbacks
+import org.crolangP2P.CrolangNode
 import java.nio.ByteBuffer
 import java.util.*
 
 private const val DEFAULT_PAYLOAD_SIZE_BYTES: Int = 20000
+private const val MAX_BUFFERED_AMOUNT = 256 * 1024 // 256 KB
 
 /**
  * Represents an abstract node in a peer-to-peer (P2P) connection.
@@ -257,16 +259,18 @@ internal abstract class AbstractNode(
     private fun handleMultipartMsg(peerMsgPart: PeerMsgPart){
         val existingIncomingMultipartMsg = incomingMultipartP2PMsgs[peerMsgPart.msgId]
         if(existingIncomingMultipartMsg == null){
-            logger.debugInfo("received first part (part: ${peerMsgPart.part}) of P2P message (tot: ${peerMsgPart.total}) from node $remoteNodeId (msg id: ${peerMsgPart.msgId}) on channel ${peerMsgPart.channel}, creating new IncomingMultipartP2PMsg")
-            incomingMultipartP2PMsgs[peerMsgPart.msgId] = IncomingMultipartP2PMsg(
-                peerMsgPart, settings.multipartP2PMessageTimeoutMillis
-            ){
-                incomingMultipartP2PMsgs.remove(peerMsgPart.msgId)
-                logger.debugErr("timeout on receiving P2P message from CrolangNode $remoteNodeId with msg id ${peerMsgPart.msgId}")
+            if(peerMsgPart.part == 0){
+                logger.debugInfo("received first part (part: 0) of P2P message (tot: ${peerMsgPart.total}) from node $remoteNodeId (msg id: ${peerMsgPart.msgId}) on channel ${peerMsgPart.channel}, creating new IncomingMultipartP2PMsg")
+                incomingMultipartP2PMsgs[peerMsgPart.msgId] = IncomingMultipartP2PMsg(
+                    peerMsgPart, settings.multipartP2PMessageTimeoutMillis
+                ){
+                    incomingMultipartP2PMsgs.remove(peerMsgPart.msgId)
+                    logger.debugErr("timeout on receiving P2P message from CrolangNode $remoteNodeId with msg id ${peerMsgPart.msgId}")
+                }
+            } else {
+                logger.debugErr("received part ${peerMsgPart.part} of P2P message from node $remoteNodeId (msg id: ${peerMsgPart.msgId}) but it is not the first part, discarding msg")
             }
-        } else if(existingIncomingMultipartMsg.wasPartDeposited(peerMsgPart)) {
-            logger.debugErr("received duplicate part ${peerMsgPart.part} of P2P message from node $remoteNodeId (msg id: ${peerMsgPart.msgId}), discarding it")
-        } else {
+        } else if(existingIncomingMultipartMsg.isPartToDeposit(peerMsgPart)) {
             logger.debugInfo("depositing part ${peerMsgPart.part} (tot: ${peerMsgPart.total}) of P2P message from node $remoteNodeId (msg id: ${peerMsgPart.msgId}) into existing IncomingMultipartP2PMsg")
             existingIncomingMultipartMsg.depositNewPart(peerMsgPart).ifPresent {
                 if(it.isError || it.msg.isEmpty){
@@ -277,6 +281,10 @@ internal abstract class AbstractNode(
                 }
                 incomingMultipartP2PMsgs.remove(peerMsgPart.msgId)
             }
+        } else {
+            existingIncomingMultipartMsg.cancelTimer()
+            incomingMultipartP2PMsgs.remove(peerMsgPart.msgId)
+            logger.debugErr("received out of order part ${peerMsgPart.part} of P2P message from node $remoteNodeId (msg id: ${peerMsgPart.msgId}), discarding msg")
         }
     }
 
@@ -301,6 +309,7 @@ internal abstract class AbstractNode(
      * The message is split into parts, each of which is sent separately.
      * The message will be recomposed on the remote node.
      */
+    @OptIn(ExperimentalSerializationApi::class)
     fun sendP2PMsg(channel: String, msg: String): Boolean {
         if(state != NodeState.CONNECTED || dataChannel.isEmpty || !dataChannel.get().state.equals(RTCDataChannelState.OPEN)){
             logger.regularErr("attempted to send message to CrolangNode $remoteNodeId that is not connected")
@@ -310,11 +319,31 @@ internal abstract class AbstractNode(
         val peerMsg = PeerMsg(nextP2PMsgSentId++, channel, msg)
         val parts: List<PeerMsgPartParsable>  = peerMsg.splitIntoParts(DEFAULT_PAYLOAD_SIZE_BYTES)
         logger.debugInfo("split P2P message to $remoteNodeId (msg id: ${peerMsg.msgId}) into ${parts.size} parts")
-        parts.forEach {
-            logger.debugInfo("sending part ${it.part}/${it.total} of P2P message to $remoteNodeId (msg id: ${peerMsg.msgId})")
-            dataChannel.get().send(RTCDataChannelBuffer(ByteBuffer.wrap(JsonParser().toJson(it).toByteArray()), false))
+        val dataChannelInstance = dataChannel.get()
+        if(parts.size == 1){
+            while(dataChannelInstance.bufferedAmount > 0) {
+                Thread.sleep(1)
+            }
+            dataChannel.get().send(RTCDataChannelBuffer(
+                ByteBuffer.wrap(cborParser.encodeToByteArray(PeerMsgPartParsable.serializer(), parts[0])),
+                true
+            ))
+            logger.debugInfo("sent single part P2P message to $remoteNodeId (msg id: ${peerMsg.msgId})")
+        } else {
+            parts.forEach {
+                val buffer = RTCDataChannelBuffer(
+                    ByteBuffer.wrap(cborParser.encodeToByteArray(PeerMsgPartParsable.serializer(), it)),
+                    true
+                )
+                while(dataChannelInstance.bufferedAmount > MAX_BUFFERED_AMOUNT) {
+                    Thread.sleep(1)
+                }
+                logger.debugInfo("sending part ${it.part}/${it.total} of P2P message to $remoteNodeId (msg id: ${peerMsg.msgId})")
+                dataChannelInstance.send(buffer)
+                //Thread.sleep(1)
+            }
+            logger.debugInfo("sent all P2P message parts to $remoteNodeId (msg id: ${peerMsg.msgId})")
         }
-        logger.debugInfo("sent all P2P message parts to $remoteNodeId (msg id: ${peerMsg.msgId})")
         return true
     }
 }
