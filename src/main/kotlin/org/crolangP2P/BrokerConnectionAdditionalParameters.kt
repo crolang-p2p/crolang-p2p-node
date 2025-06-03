@@ -19,16 +19,11 @@ package org.crolangP2P
 /**
  * Class representing additional parameters for a Broker connection.
  *
- * @property onConnectionAttemptData Optional data to be passed, used for authentication to the Broker.
  * @property lifecycleCallbacks Callbacks for various lifecycle events of the Broker reconnection/disconnection.
  * @property settings Settings for the Crolang P2P library.
  * @property logging Logging options for the Crolang P2P library.
  */
 class BrokerConnectionAdditionalParameters @JvmOverloads constructor(
-    /**
-     * Optional data to be passed, used for authentication to the Broker.
-     */
-    val onConnectionAttemptData: String? = null,
 
     /**
      * Callbacks for various lifecycle events of the Broker reconnection/disconnection.
@@ -64,20 +59,9 @@ class BrokerConnectionAdditionalParameters @JvmOverloads constructor(
      */
     class Builder {
 
-        private var onConnectionAttemptData: String? = null
         private var lifecycleCallbacks: BrokerLifecycleCallbacks = BrokerLifecycleCallbacks()
         private var settings: CrolangSettings = CrolangSettings()
         private var logging: LoggingOptions = LoggingOptions()
-
-        /**
-         * Sets optional data to be passed for authentication to the Broker.
-         *
-         * @param data authentication data
-         * @return this builder instance
-         */
-        fun onConnectionAttemptData(data: String?) = apply {
-            this.onConnectionAttemptData = data
-        }
 
         /**
          * Sets the callbacks for various lifecycle events of the Broker reconnection/disconnection.
@@ -115,12 +99,7 @@ class BrokerConnectionAdditionalParameters @JvmOverloads constructor(
          * @return a new [BrokerConnectionAdditionalParameters]
          */
         fun build(): BrokerConnectionAdditionalParameters {
-            return BrokerConnectionAdditionalParameters(
-                onConnectionAttemptData,
-                lifecycleCallbacks,
-                settings,
-                logging
-            )
+            return BrokerConnectionAdditionalParameters(lifecycleCallbacks, settings, logging)
         }
     }
 }
