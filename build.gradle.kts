@@ -25,6 +25,7 @@ plugins {
     id("org.jetbrains.dokka") version "1.8.10"
     id("com.github.jk1.dependency-license-report") version "1.16"
     id("com.vanniktech.maven.publish") version "0.30.0"
+    kotlin("plugin.serialization") version "1.9.0"
 }
 
 group = "io.github.crolang-p2p"
@@ -40,6 +41,7 @@ repositories {
 
 dependencies {
     implementation("com.google.code.gson:gson:2.13.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.6.0")
     implementation("io.socket:socket.io-client:2.1.2") {
         exclude(group = "org.json", module = "json")
         exclude(group = "io.socket", module = "engine.io-client")

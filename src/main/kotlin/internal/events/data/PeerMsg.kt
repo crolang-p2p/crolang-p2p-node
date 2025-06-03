@@ -18,6 +18,7 @@ package internal.events.data
 
 import com.google.gson.annotations.SerializedName
 import internal.utils.TimeoutTimer
+import kotlinx.serialization.Serializable
 import java.util.Optional
 import kotlin.math.ceil
 import kotlin.math.min
@@ -96,6 +97,7 @@ internal class PeerMsgPart(
  * @property part The specific part of the message.
  * @property total The total number of parts the message is split into.
  */
+@Serializable
 internal class PeerMsgPartParsable {
     @SerializedName("msgId") var msgId: Int? = null
     @SerializedName("channel") var channel: String? = null
@@ -139,10 +141,15 @@ internal class IncomingMultipartP2PMsg(
     private val msgId: Int = firstMsgPart.msgId
     private val channel: String = firstMsgPart.channel
     private val total: Int = firstMsgPart.total
-    private val gathered: MutableMap<Int, PeerMsgPart> = mutableMapOf()
+    private val totalCheck: Int = firstMsgPart.total - 1
+    private val gathered: ArrayList<String> = ArrayList(firstMsgPart.total)
 
     init {
-        gathered[firstMsgPart.part] = firstMsgPart
+        gathered.add(firstMsgPart.payload)
+    }
+
+    fun cancelTimer() {
+        timeoutTimer.cancel()
     }
 
     /**
@@ -151,8 +158,8 @@ internal class IncomingMultipartP2PMsg(
      * @param part The part of the message to check.
      * @return true if the part has already been deposited, otherwise false.
      */
-    fun wasPartDeposited(part: PeerMsgPart): Boolean {
-        return gathered.containsKey(part.part)
+    fun isPartToDeposit(part: PeerMsgPart): Boolean {
+        return gathered.size == part.part
     }
 
     /**
@@ -163,8 +170,8 @@ internal class IncomingMultipartP2PMsg(
      *         or an empty Optional if all parts are not yet received.
      */
     fun depositNewPart(part: PeerMsgPart): Optional<MsgPartsMergeResult> {
-        gathered[part.part] = part
-        return if (gathered.size < total) {
+        gathered.add(part.payload)
+        return if (part.part != totalCheck) {
             Optional.empty()
         } else {
             timeoutTimer.cancel()
@@ -179,17 +186,17 @@ internal class IncomingMultipartP2PMsg(
      * reconstructed.
      */
     private fun mergeParts(): MsgPartsMergeResult {
-        // assumes total has been checked
-        var i = 0
-        val sortedList = gathered.toSortedMap().values
-        if (sortedList.all { it.part == i++ }) {
-            val payload = sortedList.map { it.payload }.reduce { acc, payloadPart -> acc + payloadPart }
-            return MsgPartsMergeResult(false, Optional.of(PeerMsg(msgId, channel, payload)))
+        return if (gathered.size == total) {
+            val finalPayload = StringBuilder()
+            for (part in gathered) {
+                finalPayload.append(part)
+            }
+            MsgPartsMergeResult(false, Optional.of(PeerMsg(msgId, channel, finalPayload.toString())))
         } else {
-            // not all parts were present
-            return MsgPartsMergeResult(true, Optional.empty())
+            MsgPartsMergeResult(true, Optional.empty())
         }
     }
+
 }
 
 /**

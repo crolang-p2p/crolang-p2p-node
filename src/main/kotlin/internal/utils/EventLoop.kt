@@ -19,6 +19,7 @@ package internal.utils
 import internal.utils.SharedStore.logger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.onFailure
 
 /**
  * Represents an event that can be processed asynchronously within the event loop.
@@ -41,24 +42,16 @@ internal interface Event {
  * The event loop starts automatically upon initialization and runs indefinitely.
  */
 internal object EventLoop {
-    // Unbounded channel used to queue events for processing
-    private val eventChannel = Channel<Event>(Channel.UNLIMITED)
+    private val eventChannel = Channel<Event>(capacity = Channel.UNLIMITED)
 
-    // Coroutine scope for handling event processing
     private val scope = CoroutineScope(Dispatchers.Default)
 
     init {
-        // Starts the event processing coroutine when the object is initialized
         scope.launch {
             processEvents()
         }
     }
 
-    /**
-     * Continuously processes events from the channel.
-     * Each event's `process` method is executed in sequence.
-     * Any exceptions are caught and logged without stopping the loop.
-     */
     private suspend fun processEvents() {
         for (event in eventChannel) {
             try {
@@ -69,14 +62,10 @@ internal object EventLoop {
         }
     }
 
-    /**
-     * Posts an event to the event queue for asynchronous processing.
-     *
-     * @param event The event to be processed.
-     */
     fun postEvent(event: Event) {
-        scope.launch {
-            eventChannel.send(event)
+        eventChannel.trySend(event).onFailure {
+            logger.debugErr("Failed to enqueue event")
         }
     }
 }
+

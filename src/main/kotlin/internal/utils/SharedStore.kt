@@ -22,6 +22,8 @@ import internal.broker.OnConnectionToBrokerSettings
 import io.socket.client.Socket
 import org.crolangP2P.IncomingCrolangNodesCallbacks
 import internal.node.NodeState
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.cbor.Cbor
 import org.crolangP2P.CrolangSettings
 import org.crolangP2P.BrokerLifecycleCallbacks
 import org.crolangP2P.LoggingOptions
@@ -73,6 +75,12 @@ internal object SharedStore {
      * Provides utility methods to convert between JSON strings and objects.
      */
     val parser = JsonParser()
+
+    /**
+     * CBOR parser used for serializing and deserializing objects in CBOR format.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    val cborParser = Cbor {  }
 
     /**
      * Logger used throughout the library for logging messages, including debug and error logs.
