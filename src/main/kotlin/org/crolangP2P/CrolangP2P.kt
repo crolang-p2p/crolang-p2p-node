@@ -504,6 +504,7 @@ object CrolangP2P {
          * @throws RemoteNodesConnectionStatusCheckException if the connection attempt fails.
          */
         @JvmStatic
+        @Throws(RemoteNodesConnectionStatusCheckException::class)
         fun isRemoteNodeConnectedToBroker(id: String): Boolean {
             return nonVoidKotlinResultCall { Kotlin.isRemoteNodeConnectedToBroker(id) }
         }
@@ -518,6 +519,7 @@ object CrolangP2P {
          * @throws RemoteNodesConnectionStatusCheckException if the connection attempt fails.
          */
         @JvmStatic
+        @Throws(RemoteNodesConnectionStatusCheckException::class)
         fun areRemoteNodesConnectedToBroker(ids: Set<String>): Map<String, Boolean> {
             return nonVoidKotlinResultCall { Kotlin.areRemoteNodesConnectedToBroker(ids) }
         }
@@ -880,6 +882,7 @@ object CrolangP2P {
          * @see SendSocketMsgException
          */
         @JvmStatic
+        @Throws(SendSocketMsgException::class)
         fun sendSocketMsg(id: String, channel: String, msg: String) {
             return nonVoidKotlinResultCall { Kotlin.sendSocketMsg(id, channel, msg) }
         }
@@ -894,6 +897,7 @@ object CrolangP2P {
          * @see SendSocketMsgException
          */
         @JvmStatic
+        @Throws(SendSocketMsgException::class)
         fun sendSocketMsg(id: String, channel: String) {
             return nonVoidKotlinResultCall { Kotlin.sendSocketMsg(id, channel, "") }
         }
