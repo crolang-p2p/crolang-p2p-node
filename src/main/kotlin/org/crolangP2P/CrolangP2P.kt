@@ -532,6 +532,7 @@ object CrolangP2P {
          * @throws ConnectToBrokerException if the connection attempt fails.
          */
         @JvmStatic
+        @Throws(ConnectToBrokerException::class)
         fun connectToBroker(
             brokerAddr: String, nodeId: String, additionalParameters: BrokerConnectionAdditionalParameters
         ) {
@@ -551,6 +552,7 @@ object CrolangP2P {
          * @throws ConnectToBrokerException if the connection attempt fails.
          */
         @JvmStatic
+        @Throws(ConnectToBrokerException::class)
         fun connectToBroker(brokerAddr: String, nodeId: String) {
             voidKotlinResultCall { Kotlin.connectToBroker(brokerAddr, nodeId) }
         }
@@ -564,6 +566,7 @@ object CrolangP2P {
          * @throws ConnectToBrokerException if the connection attempt fails.
          */
         @JvmStatic
+        @Throws(ConnectToBrokerException::class)
         fun connectToBroker(
             brokerAddr: String,
             nodeId: String,
@@ -582,6 +585,7 @@ object CrolangP2P {
          * @throws ConnectToBrokerException if the connection attempt fails.
          */
         @JvmStatic
+        @Throws(ConnectToBrokerException::class)
         fun connectToBroker(
             brokerAddr: String,
             nodeId: String,
@@ -602,6 +606,7 @@ object CrolangP2P {
          * @throws ConnectToBrokerException if the connection attempt fails.
          */
         @JvmStatic
+        @Throws(ConnectToBrokerException::class)
         fun connectToBroker(
             brokerAddr: String,
             nodeId: String,
@@ -806,6 +811,7 @@ object CrolangP2P {
          * @see ConnectionToNodeFailedReasonException
          */
         @JvmStatic
+        @Throws(ConnectionToNodeFailedReasonException::class)
         fun connectToSingleNodeSync(id: String, callbacks: SyncCrolangNodeCallbacks): CrolangNode {
             return nonVoidKotlinResultCall { Kotlin.connectToSingleNodeSync(id, callbacks) }
         }
@@ -826,6 +832,7 @@ object CrolangP2P {
          * @see ConnectionToNodeFailedReasonException
          */
         @JvmStatic
+        @Throws(ConnectionToNodeFailedReasonException::class)
         fun connectToSingleNodeSync(id: String): CrolangNode {
             return nonVoidKotlinResultCall { Kotlin.connectToSingleNodeSync(id) }
         }

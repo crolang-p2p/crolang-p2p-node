@@ -73,13 +73,13 @@ class SyncCrolangNodeCallbacks @JvmOverloads constructor(
         private var onNewMsg: ChannelMessageCallbacks = emptyMap()
 
         /**
-         * Sets the callback invoked when the node is disconnected.
+         * Sets the callback invoked when the node is disconnected (Java-friendly Consumer overload).
          *
-         * @param callback function receiving the disconnected node’s ID
+         * @param callback Consumer receiving the node ID
          * @return this builder instance
          */
-        fun onDisconnection(callback: (id: String) -> Unit) = apply {
-            this.onDisconnection = callback
+        fun onDisconnection(callback: java.util.function.Consumer<String>) = apply {
+            this.onDisconnection = { id -> callback.accept(id) }
         }
 
         /**
@@ -162,6 +162,16 @@ class AsyncCrolangNodeCallbacks @JvmOverloads constructor(
         }
 
         /**
+         * Sets the callback invoked when the node connection fails (Java-friendly BiConsumer overload).
+         *
+         * @param callback BiConsumer receiving the node ID and failure reason
+         * @return this builder instance
+         */
+        fun onConnectionFailed(callback: java.util.function.BiConsumer<String, ConnectionToNodeFailedReasonException>) = apply {
+            this.onConnectionFailed = { id, reason -> callback.accept(id, reason) }
+        }
+
+        /**
          * Sets the callback invoked when the node is disconnected.
          *
          * @param callback function receiving the node ID
@@ -169,6 +179,16 @@ class AsyncCrolangNodeCallbacks @JvmOverloads constructor(
          */
         fun onDisconnection(callback: (String) -> Unit) = apply {
             this.onDisconnection = callback
+        }
+
+        /**
+         * Sets the callback invoked when the node is disconnected (Java-friendly Consumer overload).
+         *
+         * @param callback Consumer receiving the node ID
+         * @return this builder instance
+         */
+        fun onDisconnection(callback: java.util.function.Consumer<String>) = apply {
+            this.onDisconnection = { id -> callback.accept(id) }
         }
 
         /**
@@ -249,33 +269,33 @@ class IncomingCrolangNodesCallbacks @JvmOverloads constructor(
         }
 
         /**
-         * Sets the callback invoked when the node is successfully connected.
+         * Sets the callback invoked when the node is successfully connected (Java-friendly Consumer overload).
          *
-         * @param callback function receiving the connected node
+         * @param callback Consumer receiving the connected node
          * @return this builder instance
          */
-        fun onConnectionSuccess(callback: (CrolangNode) -> Unit) = apply {
-            this.onConnectionSuccess = callback
+        fun onConnectionSuccess(callback: java.util.function.Consumer<CrolangNode>) = apply {
+            this.onConnectionSuccess = { node -> callback.accept(node) }
         }
 
         /**
-         * Sets the callback invoked when the node connection fails.
+         * Sets the callback invoked when the node connection fails (Java-friendly BiConsumer overload).
          *
-         * @param callback function receiving the node ID and failure reason
+         * @param callback BiConsumer receiving the node ID and failure reason
          * @return this builder instance
          */
-        fun onConnectionFailed(callback: (String, ConnectionToNodeFailedReasonException) -> Unit) = apply {
-            this.onConnectionFailed = callback
+        fun onConnectionFailed(callback: java.util.function.BiConsumer<String, ConnectionToNodeFailedReasonException>) = apply {
+            this.onConnectionFailed = { id, reason -> callback.accept(id, reason) }
         }
 
         /**
-         * Sets the callback invoked when the node is disconnected.
+         * Sets the callback invoked when the node is disconnected (Java-friendly Consumer overload).
          *
-         * @param callback function receiving the node ID
+         * @param callback Consumer receiving the node ID
          * @return this builder instance
          */
-        fun onDisconnection(callback: (String) -> Unit) = apply {
-            this.onDisconnection = callback
+        fun onDisconnection(callback: java.util.function.Consumer<String>) = apply {
+            this.onDisconnection = { id -> callback.accept(id) }
         }
 
         /**
