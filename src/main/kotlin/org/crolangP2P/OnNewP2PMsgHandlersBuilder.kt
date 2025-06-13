@@ -15,44 +15,23 @@
  */
 
 package org.crolangP2P
-
-import java.util.function.BiConsumer
 import kotlin.Unit
-import kotlin.jvm.functions.Function2
 
 /**
- * Builder for compact creation of handler maps for onNewMsg, usable from both Java and Kotlin.
+ * Builder for compact creation of handler maps for P2P onNewMsg, usable from Java.
  * <p>
  * Allows adding handlers for different channels via the {@code add} method.
- * In Java, you can pass a void lambda using {@code BiConsumer<CrolangNode, String>} without returning Unit.
- * <pre>
- *     var handlers = OnNewMsgHandlersBuilder.createNew()
- *         .add("CHANNEL", (node, msg) -> { ... })
- *         .build();
- * </pre>
- * In Kotlin, you can also use Function2.
  */
-class OnNewMsgHandlersBuilder private constructor() {
+class OnNewP2PMsgHandlersBuilder private constructor() {
     private val handlers = mutableMapOf<String, Function2<CrolangNode, String, Unit>>()
-
-    /**
-     * Adds a handler for a channel, accepting a Kotlin lambda (Function2).
-     * @param channel the channel name
-     * @param handler function (CrolangNode, String) -> Unit
-     * @return this builder
-     */
-    fun add(channel: String, handler: Function2<CrolangNode, String, Unit>): OnNewMsgHandlersBuilder {
-        handlers[channel] = handler
-        return this
-    }
 
     /**
      * Adds a handler for a channel, accepting a Java lambda (BiConsumer) with no return value.
      * @param channel the channel name
-     * @param handler BiConsumer<CrolangNode, String>
+     * @param handler BiConsumer<CrolangNode, String> (node, msg) -> void
      * @return this builder
      */
-    fun add(channel: String, handler: java.util.function.BiConsumer<CrolangNode, String>): OnNewMsgHandlersBuilder {
+    fun add(channel: String, handler: java.util.function.BiConsumer<CrolangNode, String>): OnNewP2PMsgHandlersBuilder {
         handlers[channel] = object : Function2<CrolangNode, String, Unit> {
             override fun invoke(node: CrolangNode, msg: String) {
                 handler.accept(node, msg)
@@ -71,6 +50,6 @@ class OnNewMsgHandlersBuilder private constructor() {
          * Factory method to obtain a new builder, usable from Java.
          */
         @JvmStatic
-        fun createNew(): OnNewMsgHandlersBuilder = OnNewMsgHandlersBuilder()
+        fun createNew(): OnNewP2PMsgHandlersBuilder = OnNewP2PMsgHandlersBuilder()
     }
 }

@@ -111,8 +111,8 @@ class BrokerLifecycleCallbacks @JvmOverloads constructor(
          * @see InvoluntaryBrokerDisconnectionCause
          * @see BrokerConnectionAdditionalParameters
          */
-        fun onInvoluntaryDisconnection(callback: (InvoluntaryBrokerDisconnectionCause) -> Unit) = apply {
-            this.onInvoluntaryDisconnection = callback
+        fun onInvoluntaryDisconnection(callback: java.util.function.Consumer<InvoluntaryBrokerDisconnectionCause>) = apply {
+            this.onInvoluntaryDisconnection = { cause -> callback.accept(cause) }
         }
 
         /**
@@ -122,8 +122,8 @@ class BrokerLifecycleCallbacks @JvmOverloads constructor(
          * @param callback the reconnection attempt handler
          * @return this builder instance
          */
-        fun onReconnectionAttempt(callback: () -> Unit) = apply {
-            this.onReconnectionAttempt = callback
+        fun onReconnectionAttempt(callback: Runnable) = apply {
+            this.onReconnectionAttempt = { callback.run() }
         }
 
         /**
@@ -133,8 +133,8 @@ class BrokerLifecycleCallbacks @JvmOverloads constructor(
          * @param callback the successful reconnection handler
          * @return this builder instance
          */
-        fun onSuccessfullyReconnected(callback: () -> Unit) = apply {
-            this.onSuccessfullyReconnected = callback
+        fun onSuccessfullyReconnected(callback: Runnable) = apply {
+            this.onSuccessfullyReconnected = { callback.run() }
         }
 
         /**

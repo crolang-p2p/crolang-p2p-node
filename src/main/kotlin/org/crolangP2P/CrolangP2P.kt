@@ -530,6 +530,20 @@ object CrolangP2P {
          *
          * @param brokerAddr The address of the Broker to connect to.
          * @param nodeId The ID of the local node.
+         * @throws ConnectToBrokerException if the connection attempt fails.
+         */
+        @JvmStatic
+        @Throws(ConnectToBrokerException::class)
+        fun connectToBroker(brokerAddr: String, nodeId: String) {
+            voidKotlinResultCall { Kotlin.connectToBroker(brokerAddr, nodeId) }
+        }
+
+        /**
+         * Connects to the Crolang Broker using the provided broker address and Node ID.
+         * This method initiates a connection attempt to the Broker and handles the connection process.
+         *
+         * @param brokerAddr The address of the Broker to connect to.
+         * @param nodeId The ID of the local node.
          * @param additionalParameters Additional parameters for the connection, including logging options, settings and lifecycle callbacks.
          * @throws ConnectToBrokerException if the connection attempt fails.
          */
@@ -551,12 +565,19 @@ object CrolangP2P {
          *
          * @param brokerAddr The address of the Broker to connect to.
          * @param nodeId The ID of the local node.
+         * @param onNewSocketMsg Map of callbacks for handling direct messages received via the Broker's WebSocket relay.
          * @throws ConnectToBrokerException if the connection attempt fails.
          */
         @JvmStatic
         @Throws(ConnectToBrokerException::class)
-        fun connectToBroker(brokerAddr: String, nodeId: String) {
-            voidKotlinResultCall { Kotlin.connectToBroker(brokerAddr, nodeId) }
+        fun connectToBroker(
+            brokerAddr: String, nodeId: String, onNewSocketMsg: Map<String, (from: String, msg: String) -> Unit>
+        ){
+            voidKotlinResultCall { Kotlin.connectToBroker(
+                brokerAddr,
+                nodeId,
+                onNewSocketMsg = onNewSocketMsg
+            ) }
         }
 
         /**

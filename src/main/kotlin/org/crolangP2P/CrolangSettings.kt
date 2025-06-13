@@ -120,11 +120,11 @@ class CrolangSettings @JvmOverloads constructor(
         /**
          * Sets the optional maximum number of reconnection attempts.
          *
-         * @param attempts maximum number of attempts
+         * @param attempts maximum number of attempts, or empty if no limit is set
          * @return this builder instance
          */
-        fun maxReconnectionAttempts(attempts: Int) = apply {
-            this.maxReconnectionAttempts = Optional.of(attempts)
+        fun maxReconnectionAttempts(attempts: Optional<Int>) = apply {
+            this.maxReconnectionAttempts = attempts
         }
 
         /**
