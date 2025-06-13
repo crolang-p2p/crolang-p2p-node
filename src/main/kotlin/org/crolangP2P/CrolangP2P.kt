@@ -743,10 +743,10 @@ object CrolangP2P {
         @JvmStatic
         fun connectToMultipleNodesAsync(
             targets: Map<String, AsyncCrolangNodeCallbacks>,
-            onConnectionAttemptConcluded: (result: Map<String, CrolangNodeConnectionResult>) -> Unit
+            onConnectionAttemptConcluded: java.util.function.Consumer<Map<String, CrolangNodeConnectionResult>>
         ): ConnectionAttempt {
             return Kotlin.connectToMultipleNodesAsync(targets){
-                onConnectionAttemptConcluded(it.mapValues { (_, result) ->
+                onConnectionAttemptConcluded.accept(it.mapValues { (_, result) ->
                     result.fold(
                         onSuccess = { r -> CrolangNodeConnectionResult(Optional.of(r), Optional.empty()) },
                         onFailure = { e ->

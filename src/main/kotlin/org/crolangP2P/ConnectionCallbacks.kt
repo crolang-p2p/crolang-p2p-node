@@ -147,22 +147,12 @@ class AsyncCrolangNodeCallbacks @JvmOverloads constructor(
          * @param callback function receiving the connected node
          * @return this builder instance
          */
-        fun onConnectionSuccess(callback: (CrolangNode) -> Unit) = apply {
-            this.onConnectionSuccess = callback
+        fun onConnectionSuccess(callback: java.util.function.Consumer<CrolangNode>) = apply {
+            this.onConnectionSuccess = { node -> callback.accept(node) }
         }
 
         /**
          * Sets the callback invoked when the node connection fails.
-         *
-         * @param callback function receiving the node ID and failure reason
-         * @return this builder instance
-         */
-        fun onConnectionFailed(callback: (String, ConnectionToNodeFailedReasonException) -> Unit) = apply {
-            this.onConnectionFailed = callback
-        }
-
-        /**
-         * Sets the callback invoked when the node connection fails (Java-friendly BiConsumer overload).
          *
          * @param callback BiConsumer receiving the node ID and failure reason
          * @return this builder instance
@@ -173,16 +163,6 @@ class AsyncCrolangNodeCallbacks @JvmOverloads constructor(
 
         /**
          * Sets the callback invoked when the node is disconnected.
-         *
-         * @param callback function receiving the node ID
-         * @return this builder instance
-         */
-        fun onDisconnection(callback: (String) -> Unit) = apply {
-            this.onDisconnection = callback
-        }
-
-        /**
-         * Sets the callback invoked when the node is disconnected (Java-friendly Consumer overload).
          *
          * @param callback Consumer receiving the node ID
          * @return this builder instance
