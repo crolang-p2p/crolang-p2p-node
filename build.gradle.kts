@@ -255,6 +255,7 @@ tasks.register("generateBuildConfig") {
             
             object BuildConfig {
                 const val VERSION: String = "$projectVersion"
+                const val MY_PLATFORM: String = "JVM"
             }
             """.trimIndent()
         )

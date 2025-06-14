@@ -41,6 +41,7 @@ import internal.events.data.abstractions.SocketResponses
 import internal.events.data.adapters.AgnosticRTCSessionDescription
 import internal.node.NodeState
 import internal.node.ResponderNode
+import internal.BuildConfig
 import internal.utils.Event
 import internal.utils.EventLoop
 import internal.utils.SharedStore.executeCallbackOnExecutor
@@ -92,6 +93,8 @@ internal class OnIncomingConnectionAttemptMsg(private val msg: SessionDescriptio
         logger.debugInfo("received $CONNECTION_ATTEMPT socket msg but incoming connections are not allowed, discarding it")
         if(socketIO.isPresent && socketIO.get().connected()){
             val incomingConnectionsNotAllowedMsg = ParsableIncomingConnectionsNotAllowedMsg()
+            incomingConnectionsNotAllowedMsg.platformFrom = BuildConfig.MY_PLATFORM
+            incomingConnectionsNotAllowedMsg.versionFrom = BuildConfig.VERSION
             incomingConnectionsNotAllowedMsg.to = msg.from
             incomingConnectionsNotAllowedMsg.from = localNodeId
             incomingConnectionsNotAllowedMsg.sessionId = msg.sessionId
@@ -108,6 +111,8 @@ internal class OnIncomingConnectionAttemptMsg(private val msg: SessionDescriptio
         logger.debugInfo("received $CONNECTION_ATTEMPT socket msg from ${msg.from}, refused by onConnectionAttempt callback, sending $CONNECTION_REFUSAL")
         if(socketIO.isPresent && socketIO.get().connected()){
             val connectionRefusalMsg = ParsableConnectionRefusalMsg()
+            connectionRefusalMsg.platformFrom = BuildConfig.MY_PLATFORM
+            connectionRefusalMsg.versionFrom = BuildConfig.VERSION
             connectionRefusalMsg.to = msg.from
             connectionRefusalMsg.from = localNodeId
             connectionRefusalMsg.sessionId = msg.sessionId
@@ -124,6 +129,7 @@ internal class OnIncomingConnectionAttemptMsg(private val msg: SessionDescriptio
                 val newNode = ResponderNode(
                     rtcConfiguration, remoteNodeId, msg.sessionId, incomingCrolangNodesCallbacks.get()
                 )
+                newNode.setRemoteInfo(msg.platformFrom, msg.versionFrom)
                 brokerPeersContainer.responderNodes[remoteNodeId] = newNode
                 logger.debugInfo("local ResponderNode $remoteNodeId created, setting remote description")
                 newNode.state = NodeState.DESCRIPTIONS_EXCHANGE
@@ -353,6 +359,8 @@ internal class OnLocalDescriptionSetSuccessResponderNode(
             {
                 logger.debugInfo("answer converted to agnostic representation on local ResponderNode $remoteNodeId, sending $CONNECTION_ACCEPTANCE socket msg")
                 val msg = ParsableSessionDescriptionMsg()
+                msg.platformFrom = BuildConfig.MY_PLATFORM
+                msg.versionFrom = BuildConfig.VERSION
                 msg.to = remoteNodeId
                 msg.from = localNodeId
                 msg.sessionId = node.sessionId

@@ -28,6 +28,8 @@ import java.util.*
  * which includes the specific content required to establish a P2P connection between peers.
  * This message is used to facilitate WebRTC session setup across different programming languages by using agnostic data structures.
  *
+ * @property platformFrom Indicates the platform from which the message was sent.
+ * @property versionFrom Indicates the version of the platform from which the message was sent.
  * @property from Indicates the sender of the message.
  * @property to Indicates the recipient of the message.
  * @property sessionId Identifies the session associated with this message.
@@ -35,11 +37,13 @@ import java.util.*
  * of the WebRTC session, which is agnostic to the programming language to enable interoperability.
  */
 internal class SessionDescriptionMsg(
+    platformFrom: String,
+    versionFrom: String,
     from: String,
     to: String,
     sessionId: String,
     val sessionDescription: RTCSessionDescription
-): DirectMsg(from, to, sessionId)
+): DirectMsg(platformFrom, versionFrom, from, to, sessionId)
 
 /**
  * The [ParsableSessionDescriptionMsg] class extends [ParsableDirectMsg] and provides functionality for deserializing
@@ -63,7 +67,7 @@ internal open class ParsableSessionDescriptionMsg: ParsableDirectMsg<SessionDesc
      *         If necessary data is missing or the session description is invalid, an [Optional.empty()] is returned.
      */
     override fun toChecked(): Optional<SessionDescriptionMsg> {
-        if(from == null || to == null || sessionDescription == null || sessionId == null){
+        if(platformFrom == null || versionFrom == null || from == null || to == null || sessionDescription == null || sessionId == null){
             return Optional.empty()
         }
 
@@ -71,7 +75,7 @@ internal open class ParsableSessionDescriptionMsg: ParsableDirectMsg<SessionDesc
         return if(rtcSessionDescription.isEmpty){
             Optional.empty()
         } else {
-            Optional.of(SessionDescriptionMsg(from!!, to!!, sessionId!!, rtcSessionDescription.get()))
+            Optional.of(SessionDescriptionMsg(platformFrom!!, versionFrom!!, from!!, to!!, sessionId!!, rtcSessionDescription.get()))
         }
     }
 

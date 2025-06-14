@@ -26,6 +26,7 @@ import dev.onvoid.webrtc.RTCDataChannelState
 import dev.onvoid.webrtc.RTCIceCandidate
 import dev.onvoid.webrtc.RTCPeerConnection
 import dev.onvoid.webrtc.RTCPeerConnectionState
+import internal.BuildConfig
 import internal.events.data.IceCandidateMsg
 import internal.events.data.IncomingMultipartP2PMsg
 import internal.events.data.ParsableIceCandidateMsg
@@ -65,6 +66,8 @@ private const val MAX_BUFFERED_AMOUNT = 512 * 1024 // 512 KB
  * @property remoteNodeId The ID of the remote node.
  * @property sessionId The session ID of the connection.
  * @property newDataChannelRemotelyCreatedObserver The observer for new data channels created remotely, used to determine the behaviour of the concrete [InitiatorNode] or [ResponderNode]
+ * @property remoteVersion The version of the remote node.
+ * @property remotePlatform The platform of the remote node.
  * @property state The current state of the node (e.g., CREATED, CONNECTED).
  * @property peer The WebRTC peer connection object.
  * @property dataChannel The optional data channel for communication.
@@ -86,7 +89,9 @@ internal abstract class AbstractNode(
     private val concreteNodeEventParameters: ConcreteNodeEventParameters
 ) {
 
-    val crolangNode: CrolangNode = CrolangNode.create(this)
+    var remotePlatform: String = ""
+    var remoteVersion: String = ""
+    var crolangNode: CrolangNode = CrolangNode.create(this)
     var state: NodeState = NodeState.CREATED
     val peer: RTCPeerConnection = createPeer(rtcConfiguration)
     var dataChannel: Optional<RTCDataChannel> = Optional.empty()
@@ -97,6 +102,12 @@ internal abstract class AbstractNode(
     private val incomingMultipartP2PMsgs: MutableMap<Int, IncomingMultipartP2PMsg> = mutableMapOf()
     val suspendedOutgoingTeamDetailsMsgs: MutableList<ParsableIceCandidateMsg> = mutableListOf()
     val suspendedIncomingTeamDetailsMsgs: MutableList<IceCandidateMsg> = mutableListOf()
+
+    fun setRemoteInfo(remotePlatform: String, remoteVersion: String){
+        this.remotePlatform = remotePlatform
+        this.remoteVersion = remoteVersion
+        crolangNode = CrolangNode.create(this)
+    }
 
     /**
      * Forces the closure of the connection with the remote node.
@@ -214,6 +225,8 @@ internal abstract class AbstractNode(
                 override fun onIceCandidate(candidate: RTCIceCandidate?) {
                     candidate?.let {
                         val msg = ParsableIceCandidateMsg()
+                        msg.platformFrom = BuildConfig.MY_PLATFORM
+                        msg.versionFrom = BuildConfig.VERSION
                         msg.to = remoteNodeId
                         msg.from = localNodeId
                         msg.sessionId = sessionId

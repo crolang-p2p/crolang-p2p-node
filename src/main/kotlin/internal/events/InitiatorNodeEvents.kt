@@ -22,6 +22,7 @@ import dev.onvoid.webrtc.RTCOfferOptions
 import dev.onvoid.webrtc.RTCPeerConnectionState
 import dev.onvoid.webrtc.RTCSessionDescription
 import dev.onvoid.webrtc.SetSessionDescriptionObserver
+import internal.BuildConfig
 import internal.events.data.ConnectionRefusalMsg
 import internal.events.data.IceCandidateMsg
 import internal.events.data.IncomingConnectionsNotAllowedMsg
@@ -299,6 +300,8 @@ internal class OnOfferSetSuccessfullyInitiatorNode(
             { agnosticDescription ->
                 logger.debugInfo("sending converted local description to remote ResponderNode $remoteNodeId")
                 val msg = ParsableSessionDescriptionMsg()
+                msg.platformFrom = BuildConfig.MY_PLATFORM
+                msg.versionFrom = BuildConfig.VERSION
                 msg.sessionDescription = agnosticDescription
                 msg.from = localNodeId
                 msg.to = remoteNodeId
@@ -362,6 +365,7 @@ internal class OnConnectionAttemptRefusedInitiatorNode(
 
     override fun onNodeFound(node: InitiatorNode) {
         logger.regularErr("$remoteNodeId refused connection attempt")
+        node.setRemoteInfo(msg.platformFrom, msg.versionFrom)
         node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.CONNECTION_REFUSED_BY_REMOTE_NODE
         node.forceClose(NodeState.NEGOTIATION_ERROR)
     }
@@ -383,6 +387,7 @@ internal class OnIncomingConnectionsNotAllowedInitiatorNode(
 
     override fun onNodeFound(node: InitiatorNode) {
         logger.regularErr("connections not allowed on remote Node $remoteNodeId")
+        node.setRemoteInfo(msg.platformFrom, msg.versionFrom)
         node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.CONNECTIONS_NOT_ALLOWED_ON_REMOTE_NODE
         node.forceClose(NodeState.NEGOTIATION_ERROR)
     }
@@ -428,6 +433,7 @@ internal class OnIncomingP2PConnectionAcceptanceMsg(
             "Received $CONNECTION_ACCEPTANCE socket msg from remote ResponderNode " +
                     "${msg.from}, setting remote description on its corresponding local InitiatorNode"
         )
+        node.setRemoteInfo(message.platformFrom, message.versionFrom)
         node.peer.setRemoteDescription(
             message.sessionDescription, object : SetSessionDescriptionObserver {
 

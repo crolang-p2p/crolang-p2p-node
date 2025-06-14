@@ -28,6 +28,18 @@ import com.google.gson.annotations.SerializedName
 internal abstract class ParsableDirectMsg<C> : ParsableMsg<C>() {
 
     /**
+     * The platform from which the message was sent.
+     * This property is serialized with the name "platform" when the message is converted to JSON.
+     */
+    @SerializedName("platformFrom") var platformFrom: String? = null
+
+    /**
+     * The version of the platform from which the message was sent.
+     * This property is serialized with the name "versionFrom" when the message is converted to JSON.
+     */
+    @SerializedName("versionFrom") var versionFrom: String? = null
+
+    /**
      * The ID of the sender.
      * This property is serialized with the name "from" when the message is converted to JSON.
      */
@@ -50,8 +62,12 @@ internal abstract class ParsableDirectMsg<C> : ParsableMsg<C>() {
 /**
  * Abstract class representing a direct message with a sender and recipient CrolangNode IDs.
  *
+ * @property platformFrom The platform from which the message was sent.
+ * @property versionFrom The version of the platform from which the message was sent.
  * @property from The ID of the sender.
  * @property to The ID of the recipient.
  * @property sessionId The ID of the session associated with the message, used to avoid edge cases of multiple connection attempts.
  */
-internal abstract class DirectMsg(val from: String, val to: String, val sessionId: String)
+internal abstract class DirectMsg(
+    val platformFrom: String, val versionFrom: String, val from: String, val to: String, val sessionId: String
+)

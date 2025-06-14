@@ -29,17 +29,21 @@ import java.util.*
  * This message is used to exchange ICE candidates between peers. It holds the `from` and `to` fields to identify
  * the sender and receiver of the message, as well as the `candidate` field which contains the actual ICE candidate data.
  *
+ * @param platformFrom The platform from which the message was sent.
+ * @param versionFrom The version of the platform from which the message was sent.
  * @param from The ID of the sender (CrolangNode initiator).
  * @param to The ID of the receiver (CrolangNode responder).
  * @param sessionId The ID of the session.
  * @param candidate The ICE candidate to be exchanged.
  */
 internal class IceCandidateMsg(
+    platformFrom: String,
+    versionFrom: String,
     from: String,
     to: String,
     sessionId: String,
     val candidate: RTCIceCandidate
-): DirectMsg(from, to, sessionId)
+): DirectMsg(platformFrom, versionFrom, from, to, sessionId)
 
 /**
  * Represents a message containing an ICE candidate in an agnostic format, capable of being parsed into a concrete ICE candidate message.
@@ -74,13 +78,13 @@ internal class ParsableIceCandidateMsg: ParsableDirectMsg<IceCandidateMsg>() {
      * @return An `Optional` containing the concrete `IceCandidateMsg` if valid, or an empty `Optional` if the conversion failed.
      */
     override fun toChecked(): Optional<IceCandidateMsg> {
-        if(candidate == null || from == null || to == null || sessionId == null) {
+        if(platformFrom == null || versionFrom == null || candidate == null || from == null || to == null || sessionId == null) {
             return Optional.empty()
         }
         val concreteCandidate = candidate!!.toConcrete()
         if(concreteCandidate.isEmpty) {
             return Optional.empty()
         }
-        return Optional.of(IceCandidateMsg(from!!, to!!, sessionId!!, concreteCandidate.get()))
+        return Optional.of(IceCandidateMsg(platformFrom!!, versionFrom !!, from!!, to!!, sessionId!!, concreteCandidate.get()))
     }
 }

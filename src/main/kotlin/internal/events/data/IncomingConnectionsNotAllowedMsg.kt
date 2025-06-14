@@ -24,15 +24,19 @@ import java.util.Optional
  * This message is used to inform the initiator Node that incoming connections are not allowed on the responder.
  * This is received when the responder did not call CrolangP2P.allowIncomingConnections().
  *
+ * @param platformFrom The platform from which the message was sent.
+ * @param versionFrom The version of the platform from which the message was sent.
  * @param from The ID of the sender (CrolangNode responder).
  * @param to The ID of the receiver (CrolangNode initiator).
  * @param sessionId The ID of the session.
  */
 internal class IncomingConnectionsNotAllowedMsg(
+    platformFrom: String,
+    versionFrom: String,
     from: String,
     to: String,
     sessionId: String
-): DirectMsg(from, to, sessionId)
+): DirectMsg(platformFrom, versionFrom, from, to, sessionId)
 
 /**
  * This class is used to parse the JSON payload of an incoming connections not allowed message and convert it into a concrete
@@ -45,10 +49,10 @@ internal class IncomingConnectionsNotAllowedMsg(
 internal class ParsableIncomingConnectionsNotAllowedMsg: ParsableDirectMsg<IncomingConnectionsNotAllowedMsg>() {
 
     override fun toChecked(): Optional<IncomingConnectionsNotAllowedMsg> {
-        return if(from == null || to == null || sessionId == null) {
+        return if(platformFrom == null || versionFrom == null || from == null || to == null || sessionId == null) {
             Optional.empty()
         } else {
-            Optional.of(IncomingConnectionsNotAllowedMsg(from!!, to!!, sessionId!!))
+            Optional.of(IncomingConnectionsNotAllowedMsg(platformFrom!!, versionFrom!!, from!!, to!!, sessionId!!))
         }
     }
 

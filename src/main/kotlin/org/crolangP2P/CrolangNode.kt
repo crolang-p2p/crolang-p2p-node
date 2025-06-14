@@ -31,6 +31,16 @@ class CrolangNode private constructor(private val abstractNode: AbstractNode) {
     val id: String = abstractNode.remoteNodeId
 
     /**
+     * The platform of the remote Node.
+     */
+    val platform: String = abstractNode.remotePlatform
+
+    /**
+     * The version of the remote Node.
+     */
+    val version: String = abstractNode.remoteVersion
+
+    /**
      * Sends a P2P message to the remote Node in the specified channel.
      *
      * @param channel The channel to send the message to.

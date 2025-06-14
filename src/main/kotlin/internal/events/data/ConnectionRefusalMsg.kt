@@ -24,20 +24,26 @@ import java.util.*
  * This message is used to inform the initiator Node that their connection attempt was rejected by the responder.
  * This is received when the connection is refused by the user-defined onConnectionAttempt callback.
  *
+ * @param platformFrom The platform from which the message was sent.
+ * @param versionFrom The version of the platform from which the message was sent.
  * @param from The ID of the sender (CrolangNode responder).
  * @param to The ID of the receiver (CrolangNode initiator).
  * @param sessionId The ID of the session.
  */
 internal class ConnectionRefusalMsg(
+    platformFrom: String,
+    versionFrom: String,
     from: String,
     to: String,
     sessionId: String
-): DirectMsg(from, to, sessionId)
+): DirectMsg(platformFrom, versionFrom, from, to, sessionId)
 
 /**
  * This class is used to parse the JSON payload of a connection refusal message and convert it into a concrete
  * `ConnectionRefusalMsg` object.
  *
+ * @property platformFrom The platform from which the message was sent.
+ * @property versionFrom The version of the platform from which the message was sent.
  * @property from The ID of the sender (CrolangNode responder).
  * @property to The ID of the receiver (CrolangNode initiator).
  * @property sessionId The ID of the session.
@@ -45,10 +51,10 @@ internal class ConnectionRefusalMsg(
 internal class ParsableConnectionRefusalMsg: ParsableDirectMsg<ConnectionRefusalMsg>() {
 
     override fun toChecked(): Optional<ConnectionRefusalMsg> {
-        return if(from == null || to == null || sessionId == null) {
+        return if(platformFrom == null || versionFrom == null || from == null || to == null || sessionId == null) {
             Optional.empty()
         } else {
-            Optional.of(ConnectionRefusalMsg(from!!, to!!, sessionId!!))
+            Optional.of(ConnectionRefusalMsg(platformFrom!!, versionFrom!!, from!!, to!!, sessionId!!))
         }
     }
 
