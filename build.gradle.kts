@@ -212,6 +212,18 @@ tasks.named("build") {
     finalizedBy("printBuildSummary")
 }
 
+tasks.named("clean") {
+    finalizedBy("disableTestsAfterClean")
+}
+
+tasks.register("disableTestsAfterClean") {
+    doLast {
+        tasks.withType<Test>().configureEach {
+            enabled = false
+        }
+    }
+}
+
 tasks.register("viewLicenseReport") {
     dependsOn("generateLicenseReport")
     doLast {
@@ -264,5 +276,14 @@ tasks.register("generateBuildConfig") {
 
 tasks.named("compileKotlin") {
     dependsOn("generateBuildConfig")
+}
+
+tasks.withType<Test>().configureEach {
+    // Disabilita i test solo se la build è stata invocata con 'build' o 'clean build'
+    onlyIf {
+        // Se lanciato direttamente 'test', esegui i test normalmente
+        // Se lanciato come dipendenza di 'build' o 'clean', non eseguire
+        !gradle.startParameter.taskNames.any { it == "build" || it == "clean" || it == "clean build" }
+    }
 }
 
