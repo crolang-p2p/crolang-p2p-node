@@ -208,7 +208,7 @@ class AsyncCrolangNodeCallbacks @JvmOverloads constructor(
  * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel. Optional, defaults to an empty map.
  */
 class IncomingCrolangNodesCallbacks @JvmOverloads constructor(
-    val onConnectionAttempt: (id: String) -> Boolean = { true },
+    val onConnectionAttempt: (id: String, platform: String, version: String) -> Boolean = { _, _, _ -> true },
     val onConnectionSuccess: (node: CrolangNode) -> Unit = {},
     val onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> },
     onDisconnection: (id: String) -> Unit = {},
@@ -232,7 +232,7 @@ class IncomingCrolangNodesCallbacks @JvmOverloads constructor(
      * Builder class for constructing [IncomingCrolangNodesCallbacks] in a Java-friendly way.
      */
     class Builder {
-        private var onConnectionAttempt: (String) -> Boolean = { true }
+        private var onConnectionAttempt: (String, String, String) -> Boolean = { _, _, _ -> true }
         private var onConnectionSuccess: (CrolangNode) -> Unit = {}
         private var onConnectionFailed: (String, ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> }
         private var onDisconnection: (String) -> Unit = {}
@@ -241,10 +241,10 @@ class IncomingCrolangNodesCallbacks @JvmOverloads constructor(
         /**
          * Sets the callback invoked when a connection attempt is made.
          *
-         * @param callback function receiving the node ID and returning a Boolean indicating whether to accept the connection
+         * @param callback function receiving the node ID, the platform and the version; returns a Boolean indicating whether to accept the connection
          * @return this builder instance
          */
-        fun onConnectionAttempt(callback: (String) -> Boolean) = apply {
+        fun onConnectionAttempt(callback: (String, String, String) -> Boolean) = apply {
             this.onConnectionAttempt = callback
         }
 

@@ -82,7 +82,7 @@ internal class OnIncomingConnectionAttemptMsg(private val msg: SessionDescriptio
             logger.debugErr("received an $CONNECTION_ATTEMPT socket msg from ${msg.from} that we are already talking to, discarding it")
         } else if(incomingCrolangNodesCallbacks.isEmpty){
             logger.debugErr("error while retrieving incoming connections callbacks on $CONNECTION_ATTEMPT socket msg from ${msg.from}, discarding it")
-        } else if(!incomingCrolangNodesCallbacks.get().onConnectionAttempt(msg.from)) {
+        } else if(!incomingCrolangNodesCallbacks.get().onConnectionAttempt(msg.from, msg.platformFrom, msg.versionFrom)) {
             onConnectionAttemptRefusedByUserDefinedCallback()
         } else {
             onConnectionAttemptAccepted()
