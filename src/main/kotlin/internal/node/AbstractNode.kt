@@ -33,6 +33,7 @@ import internal.events.data.ParsableIceCandidateMsg
 import internal.events.data.PeerMsg
 import internal.events.data.PeerMsgPart
 import internal.events.data.PeerMsgPartParsable
+import internal.events.data.abstractions.P2PMsgTypes
 import internal.events.data.abstractions.SocketResponses
 import internal.events.data.adapters.IceCandidateAdapter
 import internal.utils.EventLoop
@@ -257,7 +258,7 @@ internal abstract class AbstractNode(
             logger.regularErr("received P2P message part with invalid total from node $remoteNodeId")
         } else if(msgPart.total == 1){
             logger.debugInfo("received single-part P2P message from node $remoteNodeId (msg id: ${msgPart.msgId})")
-            handleCompleteMsg(PeerMsg(msgPart.msgId, msgPart.channel, msgPart.payload))
+            handleCompleteMsg(PeerMsg(msgPart.msgType, msgPart.msgId, msgPart.channel, msgPart.payload))
         } else {
             logger.debugInfo("received part ${msgPart.part}/${msgPart.total} of P2P multipart message from node $remoteNodeId (msg id: ${msgPart.msgId})")
             handleMultipartMsg(msgPart)
@@ -303,17 +304,21 @@ internal abstract class AbstractNode(
 
     /**
      * Handles the reception of a complete P2P message.
-     * The message is logged and then passed to the appropriate callback defined by the user.
+     * The message is logged and then passed to the appropriate callback defined by the user, if it is a p2p user msg.
      */
     private fun handleCompleteMsg(peerMsg: PeerMsg){
-        logger.regularInfo("received P2P message from node $remoteNodeId on channel ${peerMsg.channel}: ${peerMsg.payload}")
-        val channelCallback = userDefinedCallbacks.onNewMsg[peerMsg.channel]
-        if(channelCallback != null){
-            executeCallbackOnExecutor {
-                channelCallback(this.crolangNode, peerMsg.payload)
+        if(peerMsg.msgType == P2PMsgTypes.USER_MSG){
+            logger.regularInfo("received P2P message from node $remoteNodeId on channel ${peerMsg.channel}: ${peerMsg.payload}")
+            val channelCallback = userDefinedCallbacks.onNewMsg[peerMsg.channel]
+            if(channelCallback != null){
+                executeCallbackOnExecutor {
+                    channelCallback(this.crolangNode, peerMsg.payload)
+                }
+            } else {
+                logger.regularErr("received P2P message on unknown channel ${peerMsg.channel} from node $remoteNodeId")
             }
         } else {
-            logger.regularErr("received P2P message on unknown channel ${peerMsg.channel} from node $remoteNodeId")
+            logger.debugErr("received P2P message of unknown type ${peerMsg.msgType} from node $remoteNodeId, ignoring it")
         }
     }
 
@@ -329,7 +334,7 @@ internal abstract class AbstractNode(
             return false
         }
         logger.regularInfo("sending P2P message to CrolangNode $remoteNodeId: $msg")
-        val peerMsg = PeerMsg(nextP2PMsgSentId++, channel, msg)
+        val peerMsg = PeerMsg(P2PMsgTypes.USER_MSG, nextP2PMsgSentId++, channel, msg)
         val parts: List<PeerMsgPartParsable>  = peerMsg.splitIntoParts(DEFAULT_PAYLOAD_SIZE_BYTES)
         logger.debugInfo("split P2P message to $remoteNodeId (msg id: ${peerMsg.msgId}) into ${parts.size} parts")
         val dataChannelInstance = dataChannel.get()

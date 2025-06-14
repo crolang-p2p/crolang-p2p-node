@@ -26,11 +26,13 @@ import kotlin.math.min
 /**
  * PeerMsg represents a message sent between two peers.
  *
+ * @property msgType The type of the message.
  * @property msgId A unique identifier for the message.
  * @property channel The channel through which the message is sent.
  * @property payload The content of the message.
  */
 internal open class PeerMsg(
+    val msgType: String,
     val msgId: Int,
     val channel: String,
     val payload: String
@@ -46,6 +48,7 @@ internal open class PeerMsg(
         val totalParts: Int = ceil(payloadLen.toDouble() / payloadSizeBytes).toInt()
         if(payload.isEmpty() || totalParts == 1){
             val part = PeerMsgPartParsable()
+            part.msgType = msgType
             part.total = 1
             part.part = 0
             part.msgId = msgId
@@ -55,6 +58,7 @@ internal open class PeerMsg(
         } else {
             return (0 until totalParts).map { i ->
                 val part = PeerMsgPartParsable()
+                part.msgType = msgType
                 part.total = totalParts
                 part.part = i
                 part.msgId = msgId
@@ -73,6 +77,7 @@ internal open class PeerMsg(
 /**
  * PeerMsgPart represents a part of a message. This is used when a message is split into multiple parts.
  *
+ * @property msgType The type of the message.
  * @property msgId The message identifier.
  * @property channel The channel through which the message is sent.
  * @property payload The content of the message.
@@ -80,17 +85,19 @@ internal open class PeerMsg(
  * @property total The total number of parts the message is split into.
  */
 internal class PeerMsgPart(
+    msgType: String,
     msgId: Int,
     channel: String,
     payload: String,
     val part: Int,
     val total: Int
-) : PeerMsg(msgId, channel, payload)
+) : PeerMsg(msgType, msgId, channel, payload)
 
 /**
  * PeerMsgPartParsable represents a part of a message that can be deserialized. This is used for parsing data
  * received from a peer.
  *
+ * @property msgType The type of the message.
  * @property msgId The message identifier.
  * @property channel The channel through which the message is sent.
  * @property payload The content of the message.
@@ -99,6 +106,7 @@ internal class PeerMsgPart(
  */
 @Serializable
 internal class PeerMsgPartParsable {
+    @SerializedName("msgType") var msgType: String? = null
     @SerializedName("msgId") var msgId: Int? = null
     @SerializedName("channel") var channel: String? = null
     @SerializedName("payload") var payload: String? = null
@@ -111,10 +119,10 @@ internal class PeerMsgPartParsable {
      * @return An Optional containing the PeerMsgPart if valid, otherwise an empty Optional.
      */
     fun toChecked(): Optional<PeerMsgPart> {
-        return if (msgId == null || channel == null || payload == null || part == null || total == null) {
+        return if (msgType == null || msgId == null || channel == null || payload == null || part == null || total == null) {
             Optional.empty()
         } else {
-            Optional.of(PeerMsgPart(msgId!!, channel!!, payload!!, part!!, total!!))
+            Optional.of(PeerMsgPart(msgType!!, msgId!!, channel!!, payload!!, part!!, total!!))
         }
     }
 }
@@ -138,6 +146,7 @@ internal class IncomingMultipartP2PMsg(
         }
     }
 
+    private val mstType: String = firstMsgPart.msgType
     private val msgId: Int = firstMsgPart.msgId
     private val channel: String = firstMsgPart.channel
     private val total: Int = firstMsgPart.total
@@ -191,7 +200,7 @@ internal class IncomingMultipartP2PMsg(
             for (part in gathered) {
                 finalPayload.append(part)
             }
-            MsgPartsMergeResult(false, Optional.of(PeerMsg(msgId, channel, finalPayload.toString())))
+            MsgPartsMergeResult(false, Optional.of(PeerMsg(mstType, msgId, channel, finalPayload.toString())))
         } else {
             MsgPartsMergeResult(true, Optional.empty())
         }
