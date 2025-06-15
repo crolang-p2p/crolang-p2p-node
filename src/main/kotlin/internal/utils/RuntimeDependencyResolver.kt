@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap
  */
 internal object RuntimeDependencyResolver {
 
-    private const val LIB_VERSION = "0.8.0"
     private var isLoaded = false
 
     /**
@@ -47,14 +46,14 @@ internal object RuntimeDependencyResolver {
         if(isLoaded){
             return true
         }
-        val osArch = retrieveOsArch()
-        if(!osArch.isPresent) {
+        val osArchAndVersion = retrieveOsArch()
+        if(!osArchAndVersion.isPresent) {
             logger.regularErr("Unsupported OS or architecture")
             return false
         }
-        logger.regularInfo("Detected OS/Arch: ${osArch.get()}")
+        logger.regularInfo("Detected OS/Arch: ${osArchAndVersion.get().first}")
 
-        val filename = "webrtc-java-$LIB_VERSION-${osArch.get()}.jar"
+        val filename = "webrtc-java-${osArchAndVersion.get().second}-${osArchAndVersion.get().first}.jar"
 
         val jarFile = extractJarFromResources(logger, filename)
         if (jarFile == null) {
@@ -79,26 +78,26 @@ internal object RuntimeDependencyResolver {
     /**
      * Detects the current operating system and architecture.
      *
-     * @return an [Optional] describing the corresponding WebRTC platform string (e.g., "linux-x86_64"), or empty if unsupported.
+     * @return an [Optional] describing the corresponding Pair of WebRTC platform string (e.g., "linux-x86_64") and version, or empty if unsupported.
      */
-    private fun retrieveOsArch(): Optional<String> {
+    private fun retrieveOsArch(): Optional<Pair<String, String>> {
         val osName = System.getProperty("os.name").lowercase()
         val arch = System.getProperty("os.arch").lowercase()
 
         return Optional.ofNullable(when {
             osName.contains("mac") -> when {
-                arch.contains("aarch64") -> "macos-aarch64"
-                arch.contains("x86_64") || arch.contains("amd64") -> "macos-x86_64"
+                arch.contains("aarch64") -> Pair("macos-aarch64", "0.10.0")
+                arch.contains("x86_64") || arch.contains("amd64") -> Pair("macos-x86_64", "0.10.0")
                 else -> null
             }
             osName.contains("win") -> when {
-                arch.contains("x86_64") || arch.contains("amd64") -> "windows-x86_64"
+                arch.contains("x86_64") || arch.contains("amd64") -> Pair("windows-x86_64", "0.10.0")
                 else -> null
             }
             osName.contains("nix") || osName.contains("nux") -> when {
-                arch.contains("x86_64") || arch.contains("amd64") -> "linux-x86_64"
-                arch.contains("aarch64") -> "linux-aarch64"
-                arch.contains("aarch32") -> "linux-aarch32"
+                arch.contains("x86_64") || arch.contains("amd64") -> Pair("linux-x86_64", "0.10.0")
+                arch.contains("aarch64") -> Pair("linux-aarch64", "0.8.0")
+                arch.contains("aarch32") -> Pair("linux-aarch32", "0.8.0")
                 else -> null
             }
             else -> null
