@@ -24,8 +24,8 @@ import java.util.Optional
  * @property node The connected Crolang node, if the connection was successful.
  * @property exception The reason for the connection failure, if applicable.
  *
- * @see CoreCrolangP2PFacadeJava.connectToMultipleNodesSync
- * @see CoreCrolangP2PFacadeJava.connectToMultipleNodesAsync
+ * @see CrolangP2P.Java.connectToMultipleNodesSync
+ * @see CrolangP2P.Java.connectToMultipleNodesAsync
  */
 class CrolangNodeConnectionResult(
     val node: Optional<CrolangNode>,

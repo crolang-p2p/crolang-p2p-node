@@ -47,7 +47,7 @@ abstract class BasicCrolangNodeCallbacks(
  * @param onDisconnection Callback to be called when the node is disconnected. Optional, defaults to an empty function.
  * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel. Optional, defaults to an empty map.
  */
-class SyncCrolangNodeCallbacks constructor(
+class SyncCrolangNodeCallbacks(
     onDisconnection: (id: String) -> Unit = {},
     onNewMsg: ChannelMessageCallbacks = emptyMap()
 ) : BasicCrolangNodeCallbacks(onDisconnection, onNewMsg)
@@ -61,7 +61,7 @@ class SyncCrolangNodeCallbacks constructor(
  * @param onDisconnection Callback to be called when the node is disconnected. Optional, defaults to an empty function.
  * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel. Optional, defaults to an empty map.
  */
-class AsyncCrolangNodeCallbacks constructor(
+class AsyncCrolangNodeCallbacks(
     val onConnectionSuccess: (node: CrolangNode) -> Unit = {},
     val onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> },
     onDisconnection: (id: String) -> Unit = {},
@@ -78,7 +78,7 @@ class AsyncCrolangNodeCallbacks constructor(
  * @param onDisconnection Callback to be called when the node is disconnected. Optional, defaults to an empty function.
  * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel. Optional, defaults to an empty map.
  */
-class IncomingCrolangNodesCallbacks constructor(
+class IncomingCrolangNodesCallbacks(
     val onConnectionAttempt: (id: String, platform: String, version: String) -> Boolean = { _, _, _ -> true },
     val onConnectionSuccess: (node: CrolangNode) -> Unit = {},
     val onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> },
