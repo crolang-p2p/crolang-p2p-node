@@ -63,9 +63,6 @@ jobs:
       - name: Generate license report
         run: ./gradlew generateLicenseReport
 
-      - name: Generate documentation
-        run: ./gradlew generateAllDocs
-
       - name: Rename license report
         run: mv build/reports/dependency-license/index.html build/reports/dependency-license/dependencies_report_jvm.html
 
@@ -76,6 +73,5 @@ jobs:
             build/libs/*.jar
             build/libs/*.jar.asc
             build/reports/dependency-license/dependencies_report_jvm.html
-            build/dokka/html/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
