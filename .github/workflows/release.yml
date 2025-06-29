@@ -1,11 +1,11 @@
-name: Publish Jar to GitHub Release
+name: Release to Maven Central
 
 on:
   release:
     types: [published]
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +31,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build
+      - name: Build project
         run: ./gradlew build
 
       - name: Import GPG key
@@ -54,7 +54,6 @@ jobs:
             -PmavenCentralUsername=$MAVEN_CENTRAL_USERNAME \
             -PmavenCentralPassword=$MAVEN_CENTRAL_PASSWORD \
             --no-configuration-cache
-
         env:
           GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
           GPG_PASSWORD: ${{ secrets.GPG_PASSWORD }}
@@ -64,15 +63,19 @@ jobs:
       - name: Generate license report
         run: ./gradlew generateLicenseReport
 
-      - name: Rename license report
-        run: mv build/reports/dependency-license/index.html build/reports/dependency-license/dependencies_report.html
+      - name: Generate documentation
+        run: ./gradlew generateAllDocs
 
-      - name: Upload jar, jar.asc and license report to GitHub Release
+      - name: Rename license report
+        run: mv build/reports/dependency-license/index.html build/reports/dependency-license/dependencies_report_jvm.html
+
+      - name: Upload artifacts to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             build/libs/*.jar
             build/libs/*.jar.asc
-            build/reports/dependency-license/dependencies_report.html
+            build/reports/dependency-license/dependencies_report_jvm.html
+            build/dokka/html/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

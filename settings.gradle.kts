@@ -1,1 +1,1 @@
-rootProject.name = "crolang-p2p-node-jvm"
+rootProject.name = "crolang-p2p-node"
