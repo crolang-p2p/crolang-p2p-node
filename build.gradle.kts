@@ -36,6 +36,7 @@ val buildConfigBaseDir = "${layout.buildDirectory.get()}/generated/sources/build
 // 3. Add compilation dependency if needed (e.g., tasks.named("compileKotlinJs"))
 val platforms = mapOf(
     "jvm" to "JVM",
+    "js" to "JavaScript",
 )
 
 plugins {
@@ -69,6 +70,19 @@ kotlin {
         withJava()
     }
     
+    js(IR) {
+        useCommonJs()
+        nodejs()
+        generateTypeScriptDefinitions()
+        compilations.all {
+            kotlinOptions {
+                moduleKind = "commonjs"
+                sourceMap = true
+                sourceMapEmbedSources = "always"
+            }
+        }
+    }
+    
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -95,11 +109,20 @@ kotlin {
             // Add generated JVM-specific BuildConfig to jvmMain sourceSets
             kotlin.srcDir("$buildConfigBaseDir/jvm")
         }
+        
+        val jsMain by getting {
+            dependencies {
+                // JS-specific dependencies will be added as needed
+            }
+            
+            // Add generated JS-specific BuildConfig to jsMain sourceSets
+            kotlin.srcDir("$buildConfigBaseDir/js")
+        }
     }
 }
 
 licenseReport {
-    configurations = arrayOf("jvmRuntimeClasspath")
+    configurations = arrayOf("jvmRuntimeClasspath", "jsNodeProductionLibraryCompileClasspath")
 }
 
 tasks {
@@ -145,6 +168,11 @@ tasks.withType<org.jetbrains.dokka.gradle.DokkaTask>().configureEach {
         named("jvmMain") {
             displayName.set("JVM")
             platform.set(org.jetbrains.dokka.Platform.jvm)
+        }
+        
+        named("jsMain") {
+            displayName.set("JavaScript/Node.js")
+            platform.set(org.jetbrains.dokka.Platform.js)
         }
     }
 }
@@ -370,8 +398,8 @@ tasks.register("printBuildSummary") {
         println("🎯 Target Java min version: $targetJavaMinVersion")
         println("☕  Java version used: $javaVersion")
         println("📦 JVM JAR file created: ${jvmJarFile.name} at ${jvmJarFile.parent}")
-        println("🔧 Kotlin Multiplatform targets: JVM")
-        println("📋 License report configured for: jvmRuntimeClasspath only")
+        println("🔧 Kotlin Multiplatform targets: JVM, JavaScript/Node.js")
+        println("📋 License report configured for: jvmRuntimeClasspath, jsNodeProductionLibraryCompileClasspath")
         
         println("\n📚 Documentation:")
         if (docHtmlFile.exists()) {
@@ -409,7 +437,15 @@ tasks.named("compileKotlinJvm") {
     dependsOn("generateJVMBuildConfig")
 }
 
+tasks.named("compileKotlinJs") {
+    dependsOn("generateJavaScriptBuildConfig")
+}
+
 // Ensure BuildConfig is generated before source JAR creation
 tasks.named("jvmSourcesJar") {
     dependsOn("generateJVMBuildConfig")
+}
+
+tasks.named("jsSourcesJar") {
+    dependsOn("generateJavaScriptBuildConfig")
 }
