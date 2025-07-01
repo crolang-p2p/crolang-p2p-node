@@ -27,6 +27,8 @@ import internal.utils.SharedStore.localNodeId
 import internal.utils.SharedStore.logger
 import internal.utils.SharedStore.rtcConfiguration
 import internal.utils.SharedStore.socket
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
 /**
  * Returned by an asynchronous connection attempt to a remote Node.
@@ -35,6 +37,8 @@ import internal.utils.SharedStore.socket
  * @see CoreCrolangP2PFacade.connectToSingleNodeAsync
  * @see CoreCrolangP2PFacade.connectToMultipleNodesSync
  */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
 class ConnectionAttempt(
     private val targets: Map<String, AsyncCrolangNodeCallbacks>,
     private val onConnectionAttemptConcluded: (result: Map<String, Result<CrolangNode>>) -> Unit

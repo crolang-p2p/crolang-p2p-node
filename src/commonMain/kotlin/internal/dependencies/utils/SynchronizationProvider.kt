@@ -16,48 +16,84 @@
 
 package internal.dependencies.utils
 
+import kotlinx.coroutines.*
+
 /**
- * Abstract contract for synchronization primitives.
- *
- * This abstraction allows different platforms to provide their own synchronization implementation
- * while keeping the core business logic platform-agnostic.
+ * Common synchronization provider using Kotlin Multiplatform coroutines.
+ * 
+ * This object provides synchronization functionality that works across all platforms
+ * (JVM, JS, Native) using coroutines instead of platform-specific implementations.
  */
-abstract class SynchronizationProvider {
-    
+object SynchronizationProvider {
+
     /**
      * Creates a new countdown latch with the specified initial count.
      * 
      * @param count The initial count of the latch
      * @return A CountdownLatch instance
      */
-    abstract fun createCountdownLatch(count: Int): CountdownLatch
-    
+    fun createCountdownLatch(count: Int): CountdownLatch {
+        return CountdownLatch(count)
+    }
+
     /**
      * Executes the given block with synchronization on the specified object.
-     * This provides a platform-agnostic way to perform synchronized operations.
      * 
-     * @param obj The object to synchronize on
+     * In coroutine-based implementation, this is essentially a no-op since
+     * coroutines provide structured concurrency and most operations are
+     * naturally synchronized within a single coroutine context.
+     * 
+     * @param obj The object to synchronize on (ignored in coroutine implementation)
      * @param block The block of code to execute synchronously
      * @return The result of the block execution
      */
-    abstract fun <T> synchronized(obj: Any, block: () -> T): T
+    fun <T> synchronized(@Suppress("UNUSED_PARAMETER") obj: Any, block: () -> T): T {
+        return block()
+    }
 }
 
 /**
- * Abstract contract for a countdown latch synchronization primitive.
+ * Coroutine-based countdown latch implementation using Kotlin Multiplatform coroutines.
  * 
- * A countdown latch allows one or more threads to wait until a set of operations
- * being performed in other threads completes.
+ * This implementation uses CompletableDeferred to provide cross-platform synchronization
+ * that works naturally with coroutines and event loops on all platforms.
  */
-abstract class CountdownLatch {
+class CountdownLatch(private var count: Int) {
     
-    /**
-     * Causes the current thread to wait until the latch has counted down to zero.
-     */
-    abstract fun await()
+    private var isCompleted = false
+    private var completionDeferred: CompletableDeferred<Unit>? = null
     
+    init {
+        if (count <= 0) {
+            isCompleted = true
+        } else {
+            completionDeferred = CompletableDeferred()
+        }
+    }
+
     /**
-     * Decrements the count of the latch, releasing all waiting threads if the count reaches zero.
+     * Causes the current coroutine to wait until the latch has counted down to zero.
+     * 
+     * This is a suspending function that properly integrates with coroutines
+     * and event loops on all platforms.
      */
-    abstract fun countDown()
+    suspend fun await() {
+        if (!isCompleted) {
+            completionDeferred?.await()
+        }
+    }
+
+    /**
+     * Decrements the count of the latch, releasing all waiting coroutines if the count reaches zero.
+     */
+    fun countDown() {
+        if (count > 0) {
+            count--
+            if (count == 0) {
+                isCompleted = true
+                completionDeferred?.complete(Unit)
+                completionDeferred = null
+            }
+        }
+    }
 }

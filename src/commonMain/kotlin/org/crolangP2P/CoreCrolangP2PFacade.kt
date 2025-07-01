@@ -28,6 +28,7 @@ import internal.events.data.abstractions.SocketMsgType.Companion.SOCKET_MSG_EXCH
 import internal.events.data.abstractions.SocketResponses
 import internal.node.NodeState
 import internal.utils.AwaitAsyncEventGuard
+import internal.utils.BrokerMsgExtractor.extractMessageFromPayload
 import internal.utils.CrolangLogger
 import internal.utils.SharedStore
 import internal.utils.SharedStore.brokerLifecycleCallbacks
@@ -80,7 +81,7 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      * @param id The ID of the remote node to check.
      * @return A Result containing true if the node is connected, false otherwise.
      */
-    fun isRemoteNodeConnectedToBroker(id: String): Result<Boolean> {
+    suspend fun isRemoteNodeConnectedToBroker(id: String): Result<Boolean> {
         return areRemoteNodesConnectedToBroker(setOf(id)).fold(
             onSuccess = {
                 val result = it[id]
@@ -102,7 +103,7 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      * @param ids The set of remote node IDs to check.
      * @return A Result containing a map of node IDs and their connection status.
      */
-    fun areRemoteNodesConnectedToBroker(ids: Set<String>): Result<Map<String, Boolean>> {
+    suspend fun areRemoteNodesConnectedToBroker(ids: Set<String>): Result<Map<String, Boolean>> {
         if(!isLocalNodeConnectedToBroker()){
             return Result.failure(RemoteNodesConnectionStatusCheckException.NotConnectedToBroker)
         } else if(ids.isEmpty()){
@@ -115,11 +116,12 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
             ARE_NODES_CONNECTED_TO_BROKER,
             parser.toJson(AreNodesConnectedToBrokerMsg(ids))
         ) { args ->
-            if (args.size != 1) {
+            val extracted = extractMessageFromPayload(args)
+            if (extracted == null) {
                 guard.stepDown()
                 return@emit
             }
-            val res = parser.fromJson<AreNodesConnectedToBrokerMsgResponse>(args[0].toString())
+            val res = parser.fromJson<AreNodesConnectedToBrokerMsgResponse>(extracted)
             if(res != null){
                 if (res.results != null && res.results!!.all { it.id != null && it.connected != null }) {
                     result = res.results!!.associate { it.id!! to it.connected!! }
@@ -147,7 +149,7 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      *
      * @see SendSocketMsgException
      */
-    fun sendSocketMsg(id: String, channel: String, msg: String?): Result<Unit>{
+    suspend fun sendSocketMsg(id: String, channel: String, msg: String?): Result<Unit>{
         if(!isLocalNodeConnectedToBroker()){
             return Result.failure(SendSocketMsgException.NotConnectedToBroker)
         } else if (channel.isEmpty()){
@@ -198,7 +200,7 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      *
      * @see ConnectToBrokerException
      */
-    fun connectToBroker(
+    suspend fun connectToBroker(
         brokerAddr: String,
         nodeId: String
     ): Result<Unit> {
@@ -218,7 +220,7 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      *
      * @see ConnectToBrokerException
      */
-    fun connectToBroker(
+    suspend fun connectToBroker(
         brokerAddr: String,
         nodeId: String,
         onConnectionAttemptData: String = "",
@@ -259,7 +261,7 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      * Connected Nodes will NOT be disconnected; on the other hand, the connection process of Nodes that are still
      * attempting a connection will be forcefully stopped.
      */
-    fun disconnectFromBroker() {
+    suspend fun disconnectFromBroker() {
         logger.regularInfo("initiating disconnection from Broker")
         if(socket != null){
             logger.regularInfo("already disconnected from Broker")
@@ -420,7 +422,7 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      * @see CrolangNode
      * @see ConnectionToNodeFailedReasonException
      */
-    fun connectToSingleNodeSync(
+    suspend fun connectToSingleNodeSync(
         id: String,
         callbacks: SyncCrolangNodeCallbacks = SyncCrolangNodeCallbacks()
     ): Result<CrolangNode> {
@@ -442,7 +444,7 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      * @see CrolangNode
      * @see ConnectionToNodeFailedReasonException
      */
-    fun connectToMultipleNodesSync(
+    suspend fun connectToMultipleNodesSync(
         targets: Map<String, SyncCrolangNodeCallbacks>
     ): Map<String, Result<CrolangNode>> {
         val nodesConnectionAsyncAwaitGuard = AwaitAsyncEventGuard(

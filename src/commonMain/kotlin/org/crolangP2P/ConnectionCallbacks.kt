@@ -17,6 +17,8 @@
 package org.crolangP2P
 
 import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
 /**
  * Represents a communication channel.
@@ -78,6 +80,8 @@ class AsyncCrolangNodeCallbacks(
  * @param onDisconnection Callback to be called when the node is disconnected. Optional, defaults to an empty function.
  * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel. Optional, defaults to an empty map.
  */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
 class IncomingCrolangNodesCallbacks(
     val onConnectionAttempt: (id: String, platform: String, version: String) -> Boolean = { _, _, _ -> true },
     val onConnectionSuccess: (node: CrolangNode) -> Unit = {},

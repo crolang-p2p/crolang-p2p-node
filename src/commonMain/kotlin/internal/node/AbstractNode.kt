@@ -31,6 +31,7 @@ import internal.events.data.PeerMsgPartParsable
 import internal.events.data.abstractions.P2PMsgTypes
 import internal.events.data.abstractions.SocketResponses
 import internal.events.data.adapters.IceCandidateAdapter
+import internal.utils.BrokerMsgExtractor.extractMessageFromPayload
 import internal.utils.SharedStore
 import internal.utils.SharedStore.cborParser
 import internal.utils.SharedStore.executeCallbackOnExecutor
@@ -45,7 +46,7 @@ import org.crolangP2P.BasicCrolangNodeCallbacks
 import org.crolangP2P.CrolangNode
 
 private const val DEFAULT_PAYLOAD_SIZE_BYTES: Int = 15000
-private const val MAX_BUFFERED_AMOUNT = 512 * 1024 // 512 KB
+private const val MAX_BUFFERED_AMOUNT: Int = 512 * 1024 // 512 KB
 
 /**
  * Represents an abstract node in a peer-to-peer (P2P) connection.
@@ -171,12 +172,12 @@ internal abstract class AbstractNode(
         } else {
             logger.debugInfo("sending $type to remote node $remoteNodeId")
             socket!!.emit(type, parser.toJson<T>(msg)) { args ->
-                val response = if (args.size != 1 || args[0] !is String) {
+                val extracted = extractMessageFromPayload(args)
+                val response = if (extracted == null) {
                     SocketResponses.ERROR
                 } else {
-                    val resp = args[0] as String
-                    if (SocketResponses.ALL.contains(resp)) {
-                        resp
+                    if (SocketResponses.ALL.contains(extracted)) {
+                        extracted
                     } else {
                         SocketResponses.ERROR
                     }

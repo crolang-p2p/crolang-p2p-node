@@ -17,10 +17,14 @@
 package org.crolangP2P
 
 import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
 /**
  * Enum class representing the reasons for connection failures to a remote Node.
  */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
 enum class P2PConnectionFailedReason {
     /**
      * The local Node is not connected to the Broker and therefore cannot connect to another Node.

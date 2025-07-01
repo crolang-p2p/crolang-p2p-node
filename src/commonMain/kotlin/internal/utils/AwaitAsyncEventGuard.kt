@@ -17,6 +17,7 @@
 package internal.utils
 
 import internal.dependencies.utils.CountdownLatch
+import internal.dependencies.utils.SynchronizationProvider
 import internal.utils.SharedStore
 
 /**
@@ -48,11 +49,11 @@ internal class AwaitAsyncEventGuard(private val description: String) {
      * @throws IllegalStateException if a countdown is already in progress.
      */
     fun startNewCountdown(n: Int = 1) {
-        SharedStore.dependencies!!.synchronizationProvider.synchronized(this) {
+        SynchronizationProvider.synchronized(this) {
             connectionLatch?.let {
                 throw IllegalStateException("Cannot startNewCountdown, countdown already started for '$description'")
             } ?: run {
-                connectionLatch = SharedStore.dependencies!!.synchronizationProvider.createCountdownLatch(n)
+                connectionLatch = SynchronizationProvider.createCountdownLatch(n)
             }
         }
     }
@@ -64,7 +65,7 @@ internal class AwaitAsyncEventGuard(private val description: String) {
      * @throws IllegalStateException if no countdown has been started.
      */
     fun stepDown() {
-        SharedStore.dependencies!!.synchronizationProvider.synchronized(this) {
+        SynchronizationProvider.synchronized(this) {
             connectionLatch?.let {
                 it.countDown()
             } ?: throw IllegalStateException("Cannot stepDown, countdown not started for '$description'")
@@ -72,12 +73,12 @@ internal class AwaitAsyncEventGuard(private val description: String) {
     }
 
     /**
-     * Blocks the current thread until the countdown reaches zero.
+     * Suspends the current coroutine until the countdown reaches zero.
      * After awaiting completion, the countdown latch is reset to allow reuse.
      *
      * @throws IllegalStateException if no countdown has been started.
      */
-    fun await() {
+    suspend fun await() {
         connectionLatch?.let { it ->
             it.await()
             connectionLatch = null

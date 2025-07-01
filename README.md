@@ -1,5 +1,5 @@
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blue?logo=kotlin)
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9-blueviolet?logo=kotlin)
+![Kotlin](https://img.shields.io/badge/Kotlin-1.9-blueviolet?logo=kotlin) TODO kotlin 2.1
 ![Java](https://img.shields.io/badge/Java-11-blue)
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/crolang-p2p/crolang-p2p-node)
@@ -54,6 +54,58 @@ dependencies {
 **Documentation and Examples:**
 - Kotlin usage: [examples-kotlin-crolang-p2p-node-jvm](https://github.com/crolang-p2p/examples-kotlin-crolang-p2p-node-jvm)
 - Java usage: [examples-java-crolang-p2p-node-jvm](https://github.com/crolang-p2p/examples-java-crolang-p2p-node-jvm)
+
+### JavaScript/Node.js
+TODO to be fixed, just to track the info
+**Requirements:**
+- Node.js 16+
+- TypeScript 4.5+ (for TypeScript projects)
+
+**Installation:**
+
+```bash
+npm install @crolang-p2p/crolang-p2p-node
+```
+
+**Usage:**
+
+```typescript
+import { crolangP2P } from '@crolang-p2p/crolang-p2p-node';
+
+// Check if connected to broker
+const isConnected = crolangP2P.isLocalNodeConnectedToBroker();
+console.log('Connected to broker:', isConnected);
+```
+
+**Documentation and Examples:**
+- TypeScript/Node.js usage: [examples-nodejs-crolang-p2p-node-js](./examples/examples-nodejs-crolang-p2p-node-js)
+
+**Building and Publishing the npm Package:**
+
+> **Note:** This section is for maintainers who need to build and publish the npm package from the Kotlin/JS source.
+
+1. **Build the Kotlin/JS library:**
+   ```bash
+   ./gradlew clean build jsPackage
+   ```
+
+2. **Create the npm package with all dependencies:**
+   ```bash
+   ./gradlew createNpmPackage
+   ```
+
+3. **The package will be created in:** `build/js/packages/crolang-p2p-node/`
+
+4. **Test locally:**
+   ```bash
+   cd build/js/packages/crolang-p2p-node
+   npm pack
+   ```
+
+5. **Publish to npm:**
+   ```bash
+   npm publish
+   ```
 
 ## Contributing
 Contributions, bug reports, and feature requests are welcome! Please open an issue or pull request on GitHub.

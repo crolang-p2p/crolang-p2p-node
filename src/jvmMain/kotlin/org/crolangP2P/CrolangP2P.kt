@@ -16,18 +16,9 @@
 
 package org.crolangP2P
 
-import internal.BuildConfig
 import internal.RuntimeDependencyResolver
-import internal.webrtc.ConcreteCrolangP2PPeerConnectionFactory
-import internal.socket.ConcreteCrolangP2PSocketCreator
-import internal.event_loop.ConcreteEventLoop
-import internal.utils.ConcreteTimestampProvider
-import internal.utils.ConcreteUUIDGenerator
-import internal.dependencies.utils.ConcreteTimerProvider
-import internal.dependencies.utils.ConcreteSleepProvider
-import internal.dependencies.utils.ConcreteSynchronizationProvider
-import internal.dependencies.utils.ConcreteExecutorProvider
-import internal.dependencies.DependenciesInjection
+import internal.dependencies_injection.DependenciesInjectionProviderJvm
+import org.crolangP2P.CrolangP2P.Java
 import org.crolangP2P.CrolangP2P.Kotlin
 import org.crolangP2P.exceptions.AllowIncomingConnectionsException
 import org.crolangP2P.exceptions.ConnectToBrokerException
@@ -54,19 +45,7 @@ object CrolangP2P {
     /**
      * The Kotlin interface for CrolangP2P.
      */
-    val Kotlin = CoreCrolangP2PFacadeKotlin(DependenciesInjection(
-        BuildConfig.MY_PLATFORM,
-        BuildConfig.VERSION,
-        ConcreteEventLoop(),
-        ConcreteCrolangP2PSocketCreator(),
-        ConcreteCrolangP2PPeerConnectionFactory(),
-        ConcreteUUIDGenerator(),
-        ConcreteTimestampProvider(),
-        ConcreteTimerProvider(),
-        ConcreteSleepProvider(),
-        ConcreteSynchronizationProvider(),
-        ConcreteExecutorProvider()
-    ))
+    val Kotlin = CoreCrolangP2PFacadeKotlin(DependenciesInjectionProviderJvm.getDependencies())
 
     /**
      * The Java interface for CrolangP2P.

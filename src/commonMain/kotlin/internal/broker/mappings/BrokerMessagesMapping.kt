@@ -37,6 +37,7 @@ import internal.events.data.SessionDescriptionMsg
 import internal.events.data.SocketDirectMsg
 import internal.events.data.abstractions.ParsableMsg
 import internal.events.data.abstractions.SocketMsgType
+import internal.utils.BrokerMsgExtractor.extractMessageFromPayload
 import internal.utils.SharedStore
 import internal.utils.SharedStore.logger
 import internal.utils.SharedStore.parser
@@ -119,11 +120,13 @@ internal object BrokerMessagesMapping {
         crossinline onMsgParsingErrorStrategy: () -> Unit
     ){
         socket.on(msgType){ payload ->
-            if(payload.size == 1){
-                fromJsonToCheckedMsg<U, C>(payload[0].toString())?.let {
+            val messageString = extractMessageFromPayload(payload)
+            
+            if (messageString != null) {
+                fromJsonToCheckedMsg<U, C>(messageString)?.let {
                     eventStrategy(it)
                 } ?: run {
-                    logger.debugErr("Received unparsable $msgType socket msg, discarding it")
+                    println("Failed to parse message: $messageString")
                     onMsgParsingErrorStrategy()
                 }
             } else {
@@ -132,6 +135,8 @@ internal object BrokerMessagesMapping {
             }
         }
     }
+
+
 
     /**
      * Converts a raw JSON message to a validated message object.

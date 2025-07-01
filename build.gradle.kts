@@ -9,7 +9,6 @@ import org.gradle.api.provider.Property
 import org.gradle.api.file.DirectoryProperty
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
-import java.net.URL
 import java.net.URI
 
 fun getGitTag(): String {
@@ -36,14 +35,15 @@ val buildConfigBaseDir = "${layout.buildDirectory.get()}/generated/sources/build
 // 3. Add compilation dependency if needed (e.g., tasks.named("compileKotlinJs"))
 val platforms = mapOf(
     "jvm" to "JVM",
+    "js" to "JavaScript",
 )
 
 plugins {
-    kotlin("multiplatform") version "1.9.23"
+    kotlin("multiplatform") version "2.1.21"
     id("maven-publish")
-    kotlin("plugin.serialization") version "1.9.0"
+    kotlin("plugin.serialization") version "2.1.21"
     id("com.github.jk1.dependency-license-report") version "1.16"
-    id("org.jetbrains.dokka") version "1.9.20"
+    id("org.jetbrains.dokka") version "2.0.0"
     id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
@@ -63,10 +63,37 @@ java {
 
 kotlin {
     jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = targetJavaMinVersion.toString()
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(targetJavaMinVersion.toString()))
         }
-        withJava()
+    }
+    
+    js(IR) {
+        useCommonJs()
+        nodejs()
+        browser {
+            webpackTask {
+                mode = org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig.Mode.PRODUCTION
+            }
+        }
+        generateTypeScriptDefinitions()
+        // For npm publishing, we need both executable and library
+        // executable() generates the JS files, library() enables npm publishing
+        binaries.executable()
+        binaries.library()
+        
+        // Configure the package.json for npm publishing
+        compilations["main"].packageJson {
+            name = "crolang-p2p-node"
+            version = projectVersion
+            description = "Kotlin Multiplatform WebRTC P2P networking library for JavaScript/Node.js and Browser"
+        }
+        
+        compilerOptions {
+            moduleKind.set(org.jetbrains.kotlin.gradle.dsl.JsModuleKind.MODULE_COMMONJS)
+            sourceMap.set(true)
+            sourceMapEmbedSources.set(org.jetbrains.kotlin.gradle.dsl.JsSourceMapEmbedMode.SOURCE_MAP_SOURCE_CONTENT_ALWAYS)
+        }
     }
     
     sourceSets {
@@ -75,6 +102,8 @@ kotlin {
                 api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
                 api("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.6.0")
                 api("co.touchlab:kermit:2.0.3")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+                implementation("com.benasher44:uuid:0.8.4")
             }
         }
         
@@ -88,18 +117,28 @@ kotlin {
                     exclude(group = "org.json", module = "json")
                 }
                 implementation("org.json:json:20250107")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("dev.onvoid.webrtc:webrtc-java:0.10.0")
             }
             
             // Add generated JVM-specific BuildConfig to jvmMain sourceSets
             kotlin.srcDir("$buildConfigBaseDir/jvm")
         }
+        
+        val jsMain by getting {
+            dependencies {
+                implementation(npm("socket.io-client", "4.8.1"))
+                api("com.shepeliev:webrtc-kmp:0.125.9")
+                implementation(npm("@roamhq/wrtc", "0.9.0"))
+            }
+            
+            // Add generated JS-specific BuildConfig to jsMain sourceSets
+            kotlin.srcDir("$buildConfigBaseDir/js")
+        }
     }
 }
 
 licenseReport {
-    configurations = arrayOf("jvmRuntimeClasspath")
+    configurations = arrayOf("jvmRuntimeClasspath", "jsNodeProductionLibraryCompileClasspath")
 }
 
 tasks {
@@ -146,7 +185,17 @@ tasks.withType<org.jetbrains.dokka.gradle.DokkaTask>().configureEach {
             displayName.set("JVM")
             platform.set(org.jetbrains.dokka.Platform.jvm)
         }
+        
+        named("jsMain") {
+            displayName.set("JavaScript/Node.js")
+            platform.set(org.jetbrains.dokka.Platform.js)
+        }
     }
+}
+
+// Fix Dokka V2 task dependencies
+tasks.named("dokkaGeneratePublicationHtml") {
+    dependsOn("generateJavaScriptBuildConfig", "generateJVMBuildConfig")
 }
 
 // Configure publishing with vanniktech plugin
@@ -295,7 +344,7 @@ tasks.register("addLicenseHeader") {
 }
 
 tasks.register("viewDocumentation") {
-    dependsOn("dokkaHtml")
+    dependsOn("dokkaGeneratePublicationHtml")
     doLast {
         val docFile = file("build/dokka/html/index.html")
         
@@ -319,7 +368,7 @@ tasks.register("viewDocumentation") {
 tasks.register("generateAllDocs") {
     group = "documentation"
     description = "Generates all documentation formats (HTML, Javadoc, and GFM)"
-    dependsOn("dokkaHtml", "dokkaJavadoc", "dokkaGfm", "jvmDokkaJavadocJar")
+    dependsOn("dokkaGenerate", "jvmDokkaJavadocJar")
     doLast {
         println("📚 All documentation formats generated successfully!")
         println("📖 HTML docs: build/dokka/html/index.html")
@@ -370,20 +419,20 @@ tasks.register("printBuildSummary") {
         println("🎯 Target Java min version: $targetJavaMinVersion")
         println("☕  Java version used: $javaVersion")
         println("📦 JVM JAR file created: ${jvmJarFile.name} at ${jvmJarFile.parent}")
-        println("🔧 Kotlin Multiplatform targets: JVM")
-        println("📋 License report configured for: jvmRuntimeClasspath only")
+        println("🔧 Kotlin Multiplatform targets: JVM, JavaScript/Node.js")
+        println("📋 License report configured for: jvmRuntimeClasspath, jsNodeProductionLibraryCompileClasspath")
         
         println("\n📚 Documentation:")
         if (docHtmlFile.exists()) {
             println("📖 HTML documentation: Available (run './gradlew viewDocumentation' to open)")
         } else {
-            println("📖 HTML documentation: Not generated (run './gradlew dokkaHtml')")
+            println("📖 HTML documentation: Not generated (run './gradlew dokkaGeneratePublicationHtml')")
         }
         
         if (docJavadocFile.exists()) {
             println("📄 Javadoc documentation: Available")
         } else {
-            println("📄 Javadoc documentation: Not generated (run './gradlew dokkaJavadoc')")
+            println("📄 Javadoc documentation: Not generated (run './gradlew dokkaGenerate')")
         }
         
         if (javadocJarFile.exists()) {
@@ -400,7 +449,7 @@ tasks.register("printBuildSummary") {
 }
 
 tasks.named("build") {
-    dependsOn("addLicenseHeader", "dokkaHtml", "jvmDokkaJavadocJar")
+    dependsOn("addLicenseHeader", "dokkaGeneratePublicationHtml", "jvmDokkaJavadocJar")
     finalizedBy("printBuildSummary")
 }
 
@@ -409,7 +458,59 @@ tasks.named("compileKotlinJvm") {
     dependsOn("generateJVMBuildConfig")
 }
 
+tasks.named("compileKotlinJs") {
+    dependsOn("generateJavaScriptBuildConfig")
+}
+
 // Ensure BuildConfig is generated before source JAR creation
 tasks.named("jvmSourcesJar") {
     dependsOn("generateJVMBuildConfig")
+}
+
+tasks.named("jsSourcesJar") {
+    dependsOn("generateJavaScriptBuildConfig")
+}
+
+// Custom task to create complete npm package
+tasks.register("createNpmPackage") {
+    group = "publishing"
+    description = "Creates a complete npm package with all necessary files"
+    dependsOn("jsNodeProductionLibraryDistribution", "jsPackageJson")
+    
+    doLast {
+        val packageDir = file("build/js/packages/crolang-p2p-node")
+        val distDir = file("build/dist/js/productionLibrary")
+        
+        // Copy ALL JS files to package directory (including dependencies)
+        copy {
+            from(distDir)
+            into(packageDir)
+        }
+        
+        println("📦 NPM package created successfully!")
+        println("📁 Package directory: ${packageDir.absolutePath}")
+        
+        // Create npm tarball
+        exec {
+            workingDir = packageDir
+            commandLine = listOf("npm", "pack")
+        }
+        
+        println("🎯 Package file: ${packageDir.absolutePath}/crolang-p2p-node-${projectVersion}.tgz")
+    }
+}
+
+// Fix Gradle dependency issue
+tasks.named("jsNodeProductionLibraryDistribution") {
+    dependsOn("jsProductionExecutableCompileSync")
+}
+
+// Fix dependency issue for browser webpack task
+tasks.named("jsBrowserProductionWebpack") {
+    dependsOn("jsProductionLibraryCompileSync")
+}
+
+// Fix dependency issue for browser library distribution
+tasks.named("jsBrowserProductionLibraryDistribution") {
+    dependsOn("jsProductionExecutableCompileSync")
 }

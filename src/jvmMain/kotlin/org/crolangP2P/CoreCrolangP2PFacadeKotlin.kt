@@ -19,6 +19,7 @@ package org.crolangP2P
 import internal.dependencies.DependenciesInjection
 import org.crolangP2P.CoreCrolangP2PFacade
 import java.util.Optional
+import kotlinx.coroutines.runBlocking
 
 /**
  * The Kotlin interface for CrolangP2P.
@@ -38,16 +39,18 @@ class CoreCrolangP2PFacadeKotlin(dependencies: DependenciesInjection) {
      * @param id The ID of the remote node to check.
      * @return A Result containing true if the node is connected, false otherwise.
      */
-    fun isRemoteNodeConnectedToBroker(id: String): Result<Boolean> = 
+    fun isRemoteNodeConnectedToBroker(id: String): Result<Boolean> = runBlocking { 
         coreFacade.isRemoteNodeConnectedToBroker(id)
+    }
 
     /**
      * Checks if the provided set of remote nodes are connected to the Crolang Broker.
      * @param ids The set of remote node IDs to check.
      * @return A Result containing a map of node IDs and their connection status.
      */
-    fun areRemoteNodesConnectedToBroker(ids: Set<String>): Result<Map<String, Boolean>> = 
+    fun areRemoteNodesConnectedToBroker(ids: Set<String>): Result<Map<String, Boolean>> = runBlocking { 
         coreFacade.areRemoteNodesConnectedToBroker(ids)
+    }
 
     /**
      * Sends a message to a remote node via the Broker using WebSocket relay.
@@ -56,8 +59,9 @@ class CoreCrolangP2PFacadeKotlin(dependencies: DependenciesInjection) {
      * @param msg The message to send (optional). If not provided, an empty string will be sent.
      * @return A Result indicating success or failure.
      */
-    fun sendSocketMsg(id: String, channel: String, msg: String?): Result<Unit> = 
+    fun sendSocketMsg(id: String, channel: String, msg: String?): Result<Unit> = runBlocking { 
         coreFacade.sendSocketMsg(id, channel, msg)
+    }
 
     /**
      * Connects to the Crolang Broker using the provided broker address and Node ID.
@@ -65,8 +69,9 @@ class CoreCrolangP2PFacadeKotlin(dependencies: DependenciesInjection) {
      * @param nodeId The ID of the local node.
      * @return A Result indicating success or failure of the connection attempt.
      */
-    fun connectToBroker(brokerAddr: String, nodeId: String): Result<Unit> = 
+    fun connectToBroker(brokerAddr: String, nodeId: String): Result<Unit> = runBlocking { 
         coreFacade.connectToBroker(brokerAddr, nodeId)
+    }
 
     /**
      * Connects to the Crolang Broker using the provided broker address and Node ID.
@@ -83,12 +88,16 @@ class CoreCrolangP2PFacadeKotlin(dependencies: DependenciesInjection) {
         onConnectionAttemptData: String = "",
         onNewSocketMsg: Map<String, (from: String, msg: String) -> Unit> = emptyMap(),
         additionalParameters: BrokerConnectionAdditionalParameters = BrokerConnectionAdditionalParameters()
-    ): Result<Unit> = coreFacade.connectToBroker(brokerAddr, nodeId, onConnectionAttemptData, onNewSocketMsg, additionalParameters)
+    ): Result<Unit> = runBlocking { 
+        coreFacade.connectToBroker(brokerAddr, nodeId, onConnectionAttemptData, onNewSocketMsg, additionalParameters)
+    }
 
     /**
      * Disconnects from the Crolang Broker.
      */
-    fun disconnectFromBroker() = coreFacade.disconnectFromBroker()
+    fun disconnectFromBroker() = runBlocking { 
+        coreFacade.disconnectFromBroker()
+    }
 
     /**
      * Checks if incoming connections from other Nodes are allowed.
@@ -157,7 +166,9 @@ class CoreCrolangP2PFacadeKotlin(dependencies: DependenciesInjection) {
     fun connectToSingleNodeSync(
         id: String,
         callbacks: SyncCrolangNodeCallbacks = SyncCrolangNodeCallbacks()
-    ): Result<CrolangNode> = coreFacade.connectToSingleNodeSync(id, callbacks)
+    ): Result<CrolangNode> = runBlocking { 
+        coreFacade.connectToSingleNodeSync(id, callbacks)
+    }
 
     /**
      * Connects to multiple nodes synchronously.
@@ -166,5 +177,7 @@ class CoreCrolangP2PFacadeKotlin(dependencies: DependenciesInjection) {
      */
     fun connectToMultipleNodesSync(
         targets: Map<String, SyncCrolangNodeCallbacks>
-    ): Map<String, Result<CrolangNode>> = coreFacade.connectToMultipleNodesSync(targets)
+    ): Map<String, Result<CrolangNode>> = runBlocking { 
+        coreFacade.connectToMultipleNodesSync(targets)
+    }
 }

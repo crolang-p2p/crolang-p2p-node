@@ -53,7 +53,7 @@ abstract class CrolangP2PRTCDataChannel {
      * 
      * @return The number of buffered bytes
      */
-    abstract fun bufferedAmount(): Long
+    abstract fun bufferedAmount(): Int
 
     /**
      * Closes the data channel and releases associated resources.
