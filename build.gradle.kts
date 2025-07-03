@@ -112,7 +112,7 @@ kotlin {
         
         val jsMain by getting {
             dependencies {
-                // JS-specific dependencies will be added as needed
+                implementation(npm("socket.io-client", "4.8.1"))
             }
             
             // Add generated JS-specific BuildConfig to jsMain sourceSets
