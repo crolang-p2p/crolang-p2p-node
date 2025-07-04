@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package internal.dependencies.utils
+package internal.sleep
+
+import internal.dependencies.utils.SleepProvider
 
 /**
  * Concrete implementation of SleepProvider for JVM platform.

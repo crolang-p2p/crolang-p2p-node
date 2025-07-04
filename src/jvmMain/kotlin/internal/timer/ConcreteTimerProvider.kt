@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package internal.dependencies.utils
+package internal.timer
 
+import internal.dependencies.utils.CancelableTimer
+import internal.dependencies.utils.TimerProvider
 import java.util.*
 
 /**

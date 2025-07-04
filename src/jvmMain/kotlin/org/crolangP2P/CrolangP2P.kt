@@ -23,9 +23,9 @@ import internal.socket.ConcreteCrolangP2PSocketCreator
 import internal.event_loop.ConcreteEventLoop
 import internal.utils.ConcreteTimestampProvider
 import internal.utils.ConcreteUUIDGenerator
-import internal.dependencies.utils.ConcreteTimerProvider
-import internal.dependencies.utils.ConcreteSleepProvider
-import internal.dependencies.utils.ConcreteSynchronizationProvider
+import internal.timer.ConcreteTimerProvider
+import internal.sleep.ConcreteSleepProvider
+import internal.synchronization.ConcreteSynchronizationProvider
 import internal.dependencies.utils.ConcreteExecutorProvider
 import internal.dependencies.DependenciesInjection
 import org.crolangP2P.CrolangP2P.Kotlin

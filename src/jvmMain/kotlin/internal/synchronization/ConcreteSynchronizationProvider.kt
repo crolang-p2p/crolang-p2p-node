@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package internal.dependencies.utils
+package internal.synchronization
 
+import internal.dependencies.utils.CountdownLatch
+import internal.dependencies.utils.SynchronizationProvider
 import java.util.concurrent.CountDownLatch as JvmCountDownLatch
 
 /**
