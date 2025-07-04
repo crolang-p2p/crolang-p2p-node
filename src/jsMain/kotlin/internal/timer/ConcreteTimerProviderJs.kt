@@ -16,8 +16,10 @@
 
 package internal.timer
 
+import internal.clearTimeout
 import internal.dependencies.utils.TimerProvider
 import internal.dependencies.utils.CancelableTimer
+import internal.setTimeout
 
 /**
  * JavaScript/Node.js implementation of TimerProvider using setTimeout/clearTimeout.
