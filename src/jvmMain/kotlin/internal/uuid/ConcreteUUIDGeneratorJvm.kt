@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package internal.utils
+package internal.uuid
 
 import internal.dependencies.utils.UUIDGenerator
 import java.util.UUID

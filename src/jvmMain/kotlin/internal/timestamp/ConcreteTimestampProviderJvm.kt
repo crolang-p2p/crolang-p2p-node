@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package internal.utils
+package internal.timestamp
 
 import internal.dependencies.utils.TimestampProvider
 import java.time.LocalDateTime

@@ -21,8 +21,8 @@ import internal.RuntimeDependencyResolver
 import internal.webrtc.ConcreteCrolangP2PPeerConnectionFactoryJvm
 import internal.socket.ConcreteCrolangP2PSocketCreatorJvm
 import internal.event_loop.ConcreteEventLoopJvm
-import internal.utils.ConcreteTimestampProviderJvm
-import internal.utils.ConcreteUUIDGeneratorJvm
+import internal.timestamp.ConcreteTimestampProviderJvm
+import internal.uuid.ConcreteUUIDGeneratorJvm
 import internal.timer.ConcreteTimerProvider
 import internal.sleep.ConcreteSleepProviderJvm
 import internal.synchronization.ConcreteSynchronizationProvider
