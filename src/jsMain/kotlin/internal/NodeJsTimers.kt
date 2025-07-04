@@ -17,7 +17,7 @@
 @file:JsModule("timers")
 @file:JsNonModule
 
-package internal.utils
+package internal
 
 /**
  * External declarations for Node.js timer functions.

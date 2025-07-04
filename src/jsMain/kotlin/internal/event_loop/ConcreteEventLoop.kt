@@ -18,7 +18,7 @@ package internal.event_loop
 
 import internal.dependencies.event_loop.Event
 import internal.dependencies.event_loop.EventLoop
-import internal.utils.setImmediate
+import internal.setImmediate
 
 /**
  * JavaScript/Node.js implementation of EventLoop using the Node.js event loop.

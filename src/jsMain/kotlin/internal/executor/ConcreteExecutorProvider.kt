@@ -17,7 +17,7 @@
 package internal.executor
 
 import internal.dependencies.utils.ExecutorProvider
-import internal.utils.setImmediate
+import internal.setImmediate
 
 /**
  * JavaScript/Node.js implementation of ExecutorProvider using Node.js event loop.
