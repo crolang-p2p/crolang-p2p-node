@@ -27,7 +27,7 @@ import internal.setTimeout
  * This implementation uses the native JavaScript timer functions to provide
  * timer functionality compatible with both browser and Node.js environments.
  */
-internal class ConcreteTimerProvider : TimerProvider() {
+internal class ConcreteTimerProviderJs : TimerProvider() {
     
     override fun createTimer(delayMs: Long, onTimeout: () -> Unit): CancelableTimer {
         return ConcreteJsCancelableTimer(delayMs, onTimeout)

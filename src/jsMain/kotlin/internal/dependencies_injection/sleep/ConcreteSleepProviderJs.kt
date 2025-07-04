@@ -36,7 +36,7 @@ external class Date() {
  * In JavaScript environments, asynchronous patterns with Promises and async/await
  * should be preferred over blocking sleep operations.
  */
-internal class ConcreteSleepProvider : SleepProvider() {
+internal class ConcreteSleepProviderJs : SleepProvider() {
     
     override fun sleep(millis: Long) {
         if (millis <= 0) return
