@@ -26,7 +26,7 @@ import internal.dependencies.socket.CrolangP2PSocketCreator
  * This implementation creates socket connections to CroLang P2P brokers using
  * the Socket.IO JavaScript client library through Kotlin/JS bindings.
  */
-internal class ConcreteCrolangP2PSocketCreator : CrolangP2PSocketCreator() {
+internal class ConcreteCrolangP2PSocketCreatorJs : CrolangP2PSocketCreator() {
 
     override fun create(
         localNodeId: String, myVersion: String, onConnectionToBrokerSettings: OnConnectionToBrokerSettings
@@ -42,7 +42,7 @@ internal class ConcreteCrolangP2PSocketCreator : CrolangP2PSocketCreator() {
         // Create socket using Socket.IO client
         val socket = SocketIOClient.io(onConnectionToBrokerSettings.brokerAddr, options)
         
-        return ConcreteCrolangP2PSocket(socket)
+        return ConcreteCrolangP2PSocketJs(socket)
     }
 
     /**

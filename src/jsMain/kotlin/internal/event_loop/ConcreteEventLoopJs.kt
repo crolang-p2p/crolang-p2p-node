@@ -27,7 +27,7 @@ import internal.setImmediate
  * setTimeout and Promise mechanisms to process events asynchronously.
  * Events are processed sequentially to ensure thread-safe execution.
  */
-internal class ConcreteEventLoop : EventLoop() {
+internal class ConcreteEventLoopJs : EventLoop() {
 
     private val eventQueue = mutableListOf<Event>()
     private var isProcessing = false

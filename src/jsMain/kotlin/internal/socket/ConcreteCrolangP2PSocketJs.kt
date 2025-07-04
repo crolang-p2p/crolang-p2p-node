@@ -26,7 +26,7 @@ import internal.dependencies.socket.CrolangP2PSocket
  * 
  * @param socket The underlying Socket.IO socket instance
  */
-internal class ConcreteCrolangP2PSocket(private val socket: Socket) : CrolangP2PSocket() {
+internal class ConcreteCrolangP2PSocketJs(private val socket: Socket) : CrolangP2PSocket() {
 
     override fun close() {
         socket.close()

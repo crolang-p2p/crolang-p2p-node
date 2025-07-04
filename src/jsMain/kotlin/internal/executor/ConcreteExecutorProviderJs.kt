@@ -30,7 +30,7 @@ import internal.setImmediate
  * on Node.js's event-driven architecture where all operations are scheduled on the
  * same thread but executed asynchronously.
  */
-internal class ConcreteExecutorProvider : ExecutorProvider {
+internal class ConcreteExecutorProviderJs : ExecutorProvider {
     
     override fun executeAsync(task: () -> Unit) {
         try {

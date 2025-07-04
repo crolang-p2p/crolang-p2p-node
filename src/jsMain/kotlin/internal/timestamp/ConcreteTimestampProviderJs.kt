@@ -23,7 +23,7 @@ import kotlin.js.Date
  * JavaScript/Node.js implementation of TimestampProvider using JavaScript Date API.
  * Provides formatted timestamps with millisecond precision for logging purposes.
  */
-internal class ConcreteTimestampProvider : TimestampProvider() {
+internal class ConcreteTimestampProviderJs : TimestampProvider() {
 
     /**
      * Generates a formatted timestamp string with millisecond precision.

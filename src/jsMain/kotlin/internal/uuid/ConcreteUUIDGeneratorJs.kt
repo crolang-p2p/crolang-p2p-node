@@ -24,7 +24,7 @@ import internal.dependencies.utils.UUIDGenerator
  * This implementation provides UUID generation functionality for JavaScript/Node.js platforms
  * using the native crypto.randomUUID() method available in Node.js v14.17.0+.
  */
-internal class ConcreteUUIDGenerator : UUIDGenerator() {
+internal class ConcreteUUIDGeneratorJs : UUIDGenerator() {
     
     /**
      * Generates a new random UUID using Node.js crypto.randomUUID().
