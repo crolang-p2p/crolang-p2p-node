@@ -23,7 +23,7 @@ import internal.dependencies.webrtc.contracts.CrolangP2PPeerConnectionFactory
 import internal.dependencies.webrtc.contracts.CrolangP2PRTCDataChannel
 import internal.dependencies.webrtc.contracts.CrolangP2PRTCPeerConnection
 
-internal class ConcreteCrolangP2PPeerConnectionFactory : CrolangP2PPeerConnectionFactory() {
+internal class ConcreteCrolangP2PPeerConnectionFactoryJvm : CrolangP2PPeerConnectionFactory() {
 
     override fun createPeerConnection(
         rtcConfiguration: CrolangP2PRTCConfiguration,
@@ -31,7 +31,7 @@ internal class ConcreteCrolangP2PPeerConnectionFactory : CrolangP2PPeerConnectio
         onConnectionChange: (state: CrolangP2PRTCPeerConnectionState) -> Unit,
         onDataChannel: (CrolangP2PRTCDataChannel) -> Unit
     ): CrolangP2PRTCPeerConnection {
-        return ConcreteCrolangP2PRTCPeerConnection(rtcConfiguration, onIceCandidate, onConnectionChange, onDataChannel)
+        return ConcreteCrolangP2PRTCPeerConnectionJvm(rtcConfiguration, onIceCandidate, onConnectionChange, onDataChannel)
     }
 
 }

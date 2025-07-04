@@ -25,7 +25,7 @@ import internal.dependencies.webrtc.concrete.CrolangP2PRTCDataChannelState
 import internal.dependencies.webrtc.contracts.CrolangP2PRTCDataChannel
 import java.nio.ByteBuffer
 
-internal class ConcreteCrolangP2PRTCDataChannel(private val channel: RTCDataChannel) : CrolangP2PRTCDataChannel() {
+internal class ConcreteCrolangP2PRTCDataChannelJvm(private val channel: RTCDataChannel) : CrolangP2PRTCDataChannel() {
 
     override fun bufferedAmount(): Long {
         return channel.bufferedAmount

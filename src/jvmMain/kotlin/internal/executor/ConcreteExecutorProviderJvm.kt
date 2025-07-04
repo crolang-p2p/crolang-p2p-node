@@ -22,7 +22,7 @@ import java.util.concurrent.Executors
  * JVM-specific implementation of ExecutorProvider using java.util.concurrent.Executors.
  * This implementation uses a cached thread pool for executing tasks asynchronously.
  */
-class ConcreteExecutorProvider : ExecutorProvider {
+class ConcreteExecutorProviderJvm : ExecutorProvider {
     
     /**
      * Executor service for managing threads in the library.

@@ -31,7 +31,7 @@ import kotlinx.coroutines.channels.onFailure
  *
  * The event loop starts automatically upon initialization and runs indefinitely.
  */
-internal class ConcreteEventLoop : EventLoop() {
+internal class ConcreteEventLoopJvm : EventLoop() {
 
     private val eventChannel = Channel<Event>(capacity = Channel.UNLIMITED)
 

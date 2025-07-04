@@ -18,15 +18,15 @@ package org.crolangP2P
 
 import internal.BuildConfig
 import internal.RuntimeDependencyResolver
-import internal.webrtc.ConcreteCrolangP2PPeerConnectionFactory
-import internal.socket.ConcreteCrolangP2PSocketCreator
-import internal.event_loop.ConcreteEventLoop
-import internal.utils.ConcreteTimestampProvider
-import internal.utils.ConcreteUUIDGenerator
+import internal.webrtc.ConcreteCrolangP2PPeerConnectionFactoryJvm
+import internal.socket.ConcreteCrolangP2PSocketCreatorJvm
+import internal.event_loop.ConcreteEventLoopJvm
+import internal.utils.ConcreteTimestampProviderJvm
+import internal.utils.ConcreteUUIDGeneratorJvm
 import internal.timer.ConcreteTimerProvider
-import internal.sleep.ConcreteSleepProvider
+import internal.sleep.ConcreteSleepProviderJvm
 import internal.synchronization.ConcreteSynchronizationProvider
-import internal.dependencies.utils.ConcreteExecutorProvider
+import internal.dependencies.utils.ConcreteExecutorProviderJvm
 import internal.dependencies.DependenciesInjection
 import org.crolangP2P.CrolangP2P.Kotlin
 import org.crolangP2P.exceptions.AllowIncomingConnectionsException
@@ -57,15 +57,15 @@ object CrolangP2P {
     val Kotlin = CoreCrolangP2PFacadeKotlin(DependenciesInjection(
         BuildConfig.MY_PLATFORM,
         BuildConfig.VERSION,
-        ConcreteEventLoop(),
-        ConcreteCrolangP2PSocketCreator(),
-        ConcreteCrolangP2PPeerConnectionFactory(),
-        ConcreteUUIDGenerator(),
-        ConcreteTimestampProvider(),
+        ConcreteEventLoopJvm(),
+        ConcreteCrolangP2PSocketCreatorJvm(),
+        ConcreteCrolangP2PPeerConnectionFactoryJvm(),
+        ConcreteUUIDGeneratorJvm(),
+        ConcreteTimestampProviderJvm(),
         ConcreteTimerProvider(),
-        ConcreteSleepProvider(),
+        ConcreteSleepProviderJvm(),
         ConcreteSynchronizationProvider(),
-        ConcreteExecutorProvider()
+        ConcreteExecutorProviderJvm()
     ))
 
     /**

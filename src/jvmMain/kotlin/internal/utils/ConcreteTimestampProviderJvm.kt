@@ -24,7 +24,7 @@ import java.time.format.DateTimeFormatter
  * JVM implementation of TimestampProvider using java.time APIs.
  * Provides formatted timestamps with millisecond precision for logging purposes.
  */
-internal class ConcreteTimestampProvider : TimestampProvider() {
+internal class ConcreteTimestampProviderJvm : TimestampProvider() {
 
     private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
 

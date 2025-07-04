@@ -18,11 +18,11 @@ package internal.webrtc.mappers
 
 import dev.onvoid.webrtc.RTCDataChannel
 import internal.dependencies.webrtc.contracts.CrolangP2PRTCDataChannel
-import internal.webrtc.ConcreteCrolangP2PRTCDataChannel
+import internal.webrtc.ConcreteCrolangP2PRTCDataChannelJvm
 
 internal object RTCDataChannelCrolangP2PMapper {
 
     fun mapToCrolangP2P(channel: RTCDataChannel): CrolangP2PRTCDataChannel {
-        return ConcreteCrolangP2PRTCDataChannel(channel)
+        return ConcreteCrolangP2PRTCDataChannelJvm(channel)
     }
 }

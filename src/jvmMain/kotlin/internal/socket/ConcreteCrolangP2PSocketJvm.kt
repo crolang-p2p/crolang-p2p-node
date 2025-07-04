@@ -20,7 +20,7 @@ import internal.dependencies.socket.CrolangP2PSocket
 import io.socket.client.Ack
 import io.socket.client.Socket
 
-internal class ConcreteCrolangP2PSocket(private val socket: Socket) : CrolangP2PSocket() {
+internal class ConcreteCrolangP2PSocketJvm(private val socket: Socket) : CrolangP2PSocket() {
 
     override fun close() {
         socket.close()

@@ -14,26 +14,18 @@
  * limitations under the License.
  */
 
-package internal.utils
+package internal.sleep
 
-import internal.dependencies.utils.UUIDGenerator
-import java.util.UUID
+import internal.dependencies.utils.SleepProvider
 
 /**
- * JVM implementation of UUIDGenerator using java.util.UUID.
+ * Concrete implementation of SleepProvider for JVM platform.
  * 
- * This implementation provides UUID generation functionality for JVM platforms
- * using the standard Java UUID.randomUUID() method.
+ * This implementation uses Thread.sleep() to provide sleep functionality.
  */
-internal class ConcreteUUIDGenerator : UUIDGenerator() {
+class ConcreteSleepProviderJvm : SleepProvider() {
     
-    /**
-     * Generates a new random UUID using java.util.UUID.randomUUID().
-     * 
-     * @return A randomly generated UUID string in standard format
-     */
-    override fun generateRandomUUID(): String {
-        return UUID.randomUUID().toString()
+    override fun sleep(millis: Long) {
+        Thread.sleep(millis)
     }
-    
 }

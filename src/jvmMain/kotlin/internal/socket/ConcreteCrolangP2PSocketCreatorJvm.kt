@@ -25,12 +25,12 @@ import io.socket.engineio.client.transports.WebSocket
 import java.net.URI
 
 
-internal class ConcreteCrolangP2PSocketCreator : CrolangP2PSocketCreator() {
+internal class ConcreteCrolangP2PSocketCreatorJvm : CrolangP2PSocketCreator() {
 
     override fun create(
         localNodeId: String, myVersion: String, onConnectionToBrokerSettings: OnConnectionToBrokerSettings
     ): CrolangP2PSocket {
-        return ConcreteCrolangP2PSocket(IO.socket(
+        return ConcreteCrolangP2PSocketJvm(IO.socket(
             URI.create(onConnectionToBrokerSettings.brokerAddr),
             IO.Options.builder()
                 .setReconnection(false)

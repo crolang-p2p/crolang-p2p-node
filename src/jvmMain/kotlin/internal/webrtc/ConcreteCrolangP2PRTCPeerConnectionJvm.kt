@@ -41,7 +41,7 @@ import internal.webrtc.mappers.RTCIceCandidateCrolangP2PMapper
 import internal.webrtc.mappers.RTCPeerConnectionStateCrolangP2PMapper
 import internal.webrtc.mappers.RTCSessionDescriptionCrolangP2PMapper
 
-internal class ConcreteCrolangP2PRTCPeerConnection(
+internal class ConcreteCrolangP2PRTCPeerConnectionJvm(
     rtcConfiguration: CrolangP2PRTCConfiguration,
     onIceCandidate: (CrolangP2PIceCandidate) -> Unit,
     onConnectionChange: (state: CrolangP2PRTCPeerConnectionState) -> Unit,
@@ -96,7 +96,7 @@ internal class ConcreteCrolangP2PRTCPeerConnection(
         conf.ordered = true
         conf.maxRetransmits = -1
         conf.priority = RTCPriorityType.HIGH
-        return ConcreteCrolangP2PRTCDataChannel(onvoidPeerConnection.createDataChannel("", conf))
+        return ConcreteCrolangP2PRTCDataChannelJvm(onvoidPeerConnection.createDataChannel("", conf))
     }
 
     override fun createOffer(
