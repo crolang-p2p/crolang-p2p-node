@@ -48,7 +48,6 @@ internal object DependenciesInjectionProviderJs {
             timestampProvider = ConcreteTimestampProviderJs(),
             timerProvider = ConcreteTimerProviderJs(),
             sleepProvider = ConcreteSleepProviderJs(),
-            synchronizationProvider = null!!, // TODO: Implement ConcreteSynchronizationProviderJs
             executorProvider = ConcreteExecutorProviderJs()
         )
     }

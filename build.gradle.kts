@@ -9,7 +9,6 @@ import org.gradle.api.provider.Property
 import org.gradle.api.file.DirectoryProperty
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
-import java.net.URL
 import java.net.URI
 
 fun getGitTag(): String {
@@ -89,6 +88,7 @@ kotlin {
                 api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
                 api("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.6.0")
                 api("co.touchlab:kermit:2.0.3")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
             }
         }
         
@@ -102,7 +102,6 @@ kotlin {
                     exclude(group = "org.json", module = "json")
                 }
                 implementation("org.json:json:20250107")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("dev.onvoid.webrtc:webrtc-java:0.10.0")
             }
             

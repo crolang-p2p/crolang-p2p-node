@@ -42,7 +42,6 @@ import internal.dependencies.utils.UUIDGenerator
  * @property timestampProvider Provider for obtaining current timestamps
  * @property timerProvider Provider for creating and managing timers
  * @property sleepProvider Provider for implementing platform-specific sleep operations
- * @property synchronizationProvider Provider for synchronization primitives
  * @property executorProvider Provider for executing operations on different threads/coroutines
  */
 class DependenciesInjection(
@@ -55,6 +54,5 @@ class DependenciesInjection(
     val timestampProvider: TimestampProvider,
     val timerProvider: TimerProvider,
     val sleepProvider: SleepProvider,
-    val synchronizationProvider: SynchronizationProvider,
     val executorProvider: ExecutorProvider,
 )
