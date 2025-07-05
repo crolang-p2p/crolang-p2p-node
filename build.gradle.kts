@@ -174,6 +174,11 @@ tasks.withType<org.jetbrains.dokka.gradle.DokkaTask>().configureEach {
     }
 }
 
+// Fix Dokka V2 task dependencies
+tasks.named("dokkaGeneratePublicationHtml") {
+    dependsOn("generateJavaScriptBuildConfig", "generateJVMBuildConfig")
+}
+
 // Configure publishing with vanniktech plugin
 mavenPublishing {
     coordinates(
@@ -320,7 +325,7 @@ tasks.register("addLicenseHeader") {
 }
 
 tasks.register("viewDocumentation") {
-    dependsOn("dokkaHtml")
+    dependsOn("dokkaGeneratePublicationHtml")
     doLast {
         val docFile = file("build/dokka/html/index.html")
         
@@ -344,7 +349,7 @@ tasks.register("viewDocumentation") {
 tasks.register("generateAllDocs") {
     group = "documentation"
     description = "Generates all documentation formats (HTML, Javadoc, and GFM)"
-    dependsOn("dokkaHtml", "dokkaJavadoc", "dokkaGfm", "jvmDokkaJavadocJar")
+    dependsOn("dokkaGenerate", "jvmDokkaJavadocJar")
     doLast {
         println("📚 All documentation formats generated successfully!")
         println("📖 HTML docs: build/dokka/html/index.html")
@@ -402,13 +407,13 @@ tasks.register("printBuildSummary") {
         if (docHtmlFile.exists()) {
             println("📖 HTML documentation: Available (run './gradlew viewDocumentation' to open)")
         } else {
-            println("📖 HTML documentation: Not generated (run './gradlew dokkaHtml')")
+            println("📖 HTML documentation: Not generated (run './gradlew dokkaGeneratePublicationHtml')")
         }
         
         if (docJavadocFile.exists()) {
             println("📄 Javadoc documentation: Available")
         } else {
-            println("📄 Javadoc documentation: Not generated (run './gradlew dokkaJavadoc')")
+            println("📄 Javadoc documentation: Not generated (run './gradlew dokkaGenerate')")
         }
         
         if (javadocJarFile.exists()) {
@@ -425,7 +430,7 @@ tasks.register("printBuildSummary") {
 }
 
 tasks.named("build") {
-    dependsOn("addLicenseHeader", "dokkaHtml", "jvmDokkaJavadocJar")
+    dependsOn("addLicenseHeader", "dokkaGeneratePublicationHtml", "jvmDokkaJavadocJar")
     finalizedBy("printBuildSummary")
 }
 
