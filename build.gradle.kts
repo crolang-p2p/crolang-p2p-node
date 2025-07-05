@@ -72,6 +72,20 @@ kotlin {
         useCommonJs()
         nodejs()
         generateTypeScriptDefinitions()
+        // For npm publishing, we need both executable and library
+        // executable() generates the JS files, library() enables npm publishing
+        binaries.executable()
+        binaries.library()
+        
+        // Configure the package.json for npm publishing
+        compilations["main"].packageJson {
+            name = "crolang-p2p-node"
+            version = projectVersion
+            description = "Kotlin Multiplatform WebRTC P2P networking library for JavaScript/Node.js"
+            main = "crolang-p2p-node.js"
+            types = "crolang-p2p-node.d.ts"
+        }
+        
         compilerOptions {
             moduleKind.set(org.jetbrains.kotlin.gradle.dsl.JsModuleKind.MODULE_COMMONJS)
             sourceMap.set(true)
@@ -450,4 +464,33 @@ tasks.named("jvmSourcesJar") {
 
 tasks.named("jsSourcesJar") {
     dependsOn("generateJavaScriptBuildConfig")
+}
+
+// Custom task to create complete npm package
+tasks.register("createNpmPackage") {
+    group = "publishing"
+    description = "Creates a complete npm package with all necessary files"
+    dependsOn("jsNodeProductionLibraryDistribution", "jsPackageJson")
+    
+    doLast {
+        val packageDir = file("build/js/packages/crolang-p2p-node")
+        val distDir = file("build/dist/js/productionLibrary")
+        
+        // Copy ALL JS files to package directory (including dependencies)
+        copy {
+            from(distDir)
+            into(packageDir)
+        }
+        
+        println("📦 NPM package created successfully!")
+        println("📁 Package directory: ${packageDir.absolutePath}")
+        
+        // Create npm tarball
+        exec {
+            workingDir = packageDir
+            commandLine = listOf("npm", "pack")
+        }
+        
+        println("🎯 Package file: ${packageDir.absolutePath}/crolang-p2p-node-${projectVersion}.tgz")
+    }
 }
