@@ -494,3 +494,8 @@ tasks.register("createNpmPackage") {
         println("🎯 Package file: ${packageDir.absolutePath}/crolang-p2p-node-${projectVersion}.tgz")
     }
 }
+
+// Fix Gradle dependency issue
+tasks.named("jsNodeProductionLibraryDistribution") {
+    dependsOn("jsProductionExecutableCompileSync")
+}

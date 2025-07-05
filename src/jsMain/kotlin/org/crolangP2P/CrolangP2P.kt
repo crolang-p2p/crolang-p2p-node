@@ -17,6 +17,8 @@
 package org.crolangP2P
 
 import internal.dependencies_injection.DependenciesInjectionProviderJs
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.promise
 import org.crolangP2P.CoreCrolangP2PFacade
 
 /**
@@ -40,18 +42,28 @@ class CrolangP2P {
         return coreFacade.isLocalNodeConnectedToBroker()
     }
 
-    // TODO: Add other methods as needed
-    // - isRemoteNodeConnectedToBroker()
-    // - areRemoteNodesConnectedToBroker()
-    // - connectToBroker()
-    // - disconnectFromBroker()
-    // - allowIncomingConnections()
-    // - stopIncomingConnections()
-    // - getAllConnectedNodes()
-    // - getConnectedNode()
-    // - connectToSingleNodeAsync()
-    // - connectToSingleNodeSync()
-    // - connectToMultipleNodesAsync()
-    // - connectToMultipleNodesSync()
-    // - sendSocketMsg()
+    /**
+     * Connects to the Crolang Broker asynchronously.
+     * This method returns a Promise that resolves when the connection attempt is complete.
+     *
+     * @param brokerAddress the address of the broker (e.g., "ws://localhost:8080")
+     * @param nodeId the unique identifier for this node
+     * @param authData optional authentication data
+     * @return Promise that resolves to true if connection was successful, false otherwise
+     */
+    fun connectToBroker(
+        brokerAddress: String,
+        nodeId: String
+    ): kotlin.js.Promise<Boolean> {
+        return GlobalScope.promise {
+            try {
+                val result = coreFacade.connectToBroker(brokerAddress, nodeId)
+                println("Risultato della connessione: $result")
+                result.isSuccess
+            } catch (e: Exception) {
+                println("L'errore: $e")
+                false
+            }
+        }
+    }
 }
