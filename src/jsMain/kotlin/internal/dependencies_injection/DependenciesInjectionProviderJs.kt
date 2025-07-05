@@ -25,6 +25,7 @@ import internal.dependencies_injection.socket.ConcreteCrolangP2PSocketCreatorJs
 import internal.dependencies_injection.timer.ConcreteTimerProviderJs
 import internal.dependencies_injection.timestamp.ConcreteTimestampProviderJs
 import internal.dependencies_injection.uuid.ConcreteUUIDGeneratorJs
+import internal.dependencies_injection.webrtc.ConcreteCrolangP2PPeerConnectionFactoryJs
 
 /**
  * JavaScript/Node.js implementation of the dependencies injection provider.
@@ -43,7 +44,7 @@ internal object DependenciesInjectionProviderJs {
             myVersion = BuildConfig.VERSION,
             eventLoop = ConcreteEventLoopJs(),
             socketCreator = ConcreteCrolangP2PSocketCreatorJs(),
-            crolangP2PPeerConnectionFactory = null!!, // TODO: Implement ConcreteCrolangP2PPeerConnectionFactoryJs
+            crolangP2PPeerConnectionFactory = ConcreteCrolangP2PPeerConnectionFactoryJs(),
             uuidGenerator = ConcreteUUIDGeneratorJs(),
             timestampProvider = ConcreteTimestampProviderJs(),
             timerProvider = ConcreteTimerProviderJs(),
