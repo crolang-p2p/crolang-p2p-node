@@ -45,3 +45,5 @@ kotlin-js-store/
 # OS generated files
 Thumbs.db
 ehthumbs.db
+
+.kotlin/

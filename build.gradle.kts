@@ -39,11 +39,11 @@ val platforms = mapOf(
 )
 
 plugins {
-    kotlin("multiplatform") version "1.9.23"
+    kotlin("multiplatform") version "2.1.21"
     id("maven-publish")
-    kotlin("plugin.serialization") version "1.9.0"
+    kotlin("plugin.serialization") version "2.1.21"
     id("com.github.jk1.dependency-license-report") version "1.16"
-    id("org.jetbrains.dokka") version "1.9.20"
+    id("org.jetbrains.dokka") version "2.0.0"
     id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
@@ -63,22 +63,19 @@ java {
 
 kotlin {
     jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = targetJavaMinVersion.toString()
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(targetJavaMinVersion.toString()))
         }
-        withJava()
     }
     
     js(IR) {
         useCommonJs()
         nodejs()
         generateTypeScriptDefinitions()
-        compilations.all {
-            kotlinOptions {
-                moduleKind = "commonjs"
-                sourceMap = true
-                sourceMapEmbedSources = "always"
-            }
+        compilerOptions {
+            moduleKind.set(org.jetbrains.kotlin.gradle.dsl.JsModuleKind.MODULE_COMMONJS)
+            sourceMap.set(true)
+            sourceMapEmbedSources.set(org.jetbrains.kotlin.gradle.dsl.JsSourceMapEmbedMode.SOURCE_MAP_SOURCE_CONTENT_ALWAYS)
         }
     }
     
@@ -88,7 +85,7 @@ kotlin {
                 api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
                 api("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.6.0")
                 api("co.touchlab:kermit:2.0.3")
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
             }
         }
         
@@ -112,6 +109,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(npm("socket.io-client", "4.8.1"))
+                api("com.shepeliev:webrtc-kmp:0.125.9")
             }
             
             // Add generated JS-specific BuildConfig to jsMain sourceSets
