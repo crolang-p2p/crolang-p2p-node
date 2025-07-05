@@ -17,6 +17,7 @@
 package org.crolangP2P
 
 import internal.dependencies_injection.DependenciesInjectionProviderJs
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.promise
 import org.crolangP2P.CoreCrolangP2PFacade
@@ -27,6 +28,7 @@ import org.crolangP2P.CoreCrolangP2PFacade
  *
  * This is the JavaScript/Node.js interface that provides direct access to all functionalities.
  */
+@OptIn(ExperimentalJsExport::class)
 @JsExport
 class CrolangP2P {
 
@@ -46,11 +48,11 @@ class CrolangP2P {
      * Connects to the Crolang Broker asynchronously.
      * This method returns a Promise that resolves when the connection attempt is complete.
      *
-     * @param brokerAddress the address of the broker (e.g., "ws://localhost:8080")
+     * @param brokerAddress the address of the broker
      * @param nodeId the unique identifier for this node
-     * @param authData optional authentication data
      * @return Promise that resolves to true if connection was successful, false otherwise
      */
+    @OptIn(DelicateCoroutinesApi::class)
     fun connectToBroker(
         brokerAddress: String,
         nodeId: String
