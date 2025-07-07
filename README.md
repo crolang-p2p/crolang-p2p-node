@@ -1,5 +1,5 @@
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blue?logo=kotlin)
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9-blueviolet?logo=kotlin) TODO kotlin 2.1
+![Kotlin](https://img.shields.io/badge/Kotlin-2.1-blueviolet?logo=kotlin)
 ![Java](https://img.shields.io/badge/Java-11-blue)
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/crolang-p2p/crolang-p2p-node)
