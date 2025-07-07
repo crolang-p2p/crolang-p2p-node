@@ -1,10 +1,15 @@
-![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blue?logo=kotlin)
+![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blue?logo=kotlin)  
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.1-blueviolet?logo=kotlin)
-![Java](https://img.shields.io/badge/Java-11-blue)
+![Java](https://img.shields.io/badge/Java-11-blue)  
+![JavaScript](https://img.shields.io/badge/JavaScript-ES2020-yellow?logo=javascript)
+![TypeScript](https://img.shields.io/badge/TypeScript-4.5+-blue?logo=typescript)
+![Browser](https://img.shields.io/badge/Browser-JS/TS-orange?logo=javascript)
+![Node.js](https://img.shields.io/badge/Node.js-16+-green?logo=node.js)
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/crolang-p2p/crolang-p2p-node)
+![GitHub Release Date](https://img.shields.io/github/release-date/crolang-p2p/crolang-p2p-node). 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.crolang-p2p/crolang-p2p-node-jvm.svg)](https://central.sonatype.com/artifact/io.github.crolang-p2p/crolang-p2p-node-jvm)
-![GitHub Release Date](https://img.shields.io/github/release-date/crolang-p2p/crolang-p2p-node)
+[![npm](https://img.shields.io/npm/v/crolang-p2p-node.svg)](https://www.npmjs.com/package/crolang-p2p-node)
 
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
 ![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9C%93-brightgreen)
