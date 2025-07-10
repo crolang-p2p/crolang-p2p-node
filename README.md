@@ -21,6 +21,7 @@ The official Kotlin Multiplatform Crolang Node implementation for the [CrolangP2
 - [The CrolangP2P Project](#the-crolangp2p-project)
 - [Supported Platforms & Examples](#supported-platforms--examples)
   - [JVM (Kotlin/Java)](#jvm-kotlinjava)
+  - [Javascript/Typescript](#javascripttypescript)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -46,13 +47,7 @@ This library is built with Kotlin Multiplatform and currently supports the follo
 
 **Installation:**
 
-Add the dependency to your project using one of the snippets available in the [Maven Central Repository page](https://central.sonatype.com/artifact/io.github.crolang-p2p/crolang-p2p-node-jvm/overview):
-
-```kotlin
-dependencies {
-    implementation("io.github.crolang-p2p:crolang-p2p-node-jvm:1.0.0")
-}
-```
+Add the dependency to your project using one of the snippets available in the [Maven Central Repository page](https://central.sonatype.com/artifact/io.github.crolang-p2p/crolang-p2p-node-jvm/overview).
 
 **Note:** If you are using Linux on an aarch32 or aarch64 architecture, please do not use Java 21, as it is not supported by the WebRTC implementation used by this library. Use any other version of Java 11+ instead.
 
@@ -60,57 +55,18 @@ dependencies {
 - Kotlin usage: [examples-kotlin-crolang-p2p-node-jvm](https://github.com/crolang-p2p/examples-kotlin-crolang-p2p-node-jvm)
 - Java usage: [examples-java-crolang-p2p-node-jvm](https://github.com/crolang-p2p/examples-java-crolang-p2p-node-jvm)
 
-### JavaScript/Node.js
-TODO to be fixed, just to track the info
+### JavaScript/TypeScript
+
 **Requirements:**
 - Node.js 16+
 - TypeScript 4.5+ (for TypeScript projects)
 
 **Installation:**
 
-```bash
-npm install @crolang-p2p/crolang-p2p-node
-```
-
-**Usage:**
-
-```typescript
-import { crolangP2P } from '@crolang-p2p/crolang-p2p-node';
-
-// Check if connected to broker
-const isConnected = crolangP2P.isLocalNodeConnectedToBroker();
-console.log('Connected to broker:', isConnected);
-```
+Add the dependency to your project using your favourite dependency manager (npm, yarn, etc...) installing it by retrieving it from the [NPM portal](https://www.npmjs.com/package/crolang-p2p-node).
 
 **Documentation and Examples:**
-- TypeScript/Node.js usage: [examples-nodejs-crolang-p2p-node-js](./examples/examples-nodejs-crolang-p2p-node-js)
-
-**Building and Publishing the npm Package:**
-
-> **Note:** This section is for maintainers who need to build and publish the npm package from the Kotlin/JS source.
-
-1. **Build the Kotlin/JS library:**
-   ```bash
-   ./gradlew clean build jsPackage
-   ```
-
-2. **Create the npm package with all dependencies:**
-   ```bash
-   ./gradlew createNpmPackage
-   ```
-
-3. **The package will be created in:** `build/js/packages/crolang-p2p-node/`
-
-4. **Test locally:**
-   ```bash
-   cd build/js/packages/crolang-p2p-node
-   npm pack
-   ```
-
-5. **Publish to npm:**
-   ```bash
-   npm publish
-   ```
+- Node.js usage: [examples-nodejs-crolang-p2p-node-js](https://github.com/crolang-p2p/examples-nodejs-crolang-p2p-node-js)
 
 ## Contributing
 Contributions, bug reports, and feature requests are welcome! Please open an issue or pull request on GitHub.
