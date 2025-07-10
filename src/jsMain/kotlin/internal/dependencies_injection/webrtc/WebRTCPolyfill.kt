@@ -37,7 +37,6 @@ fun setupWebRTCPolyfill() {
             // Check if we're in Node.js and WebRTC is not available
             if (typeof process !== 'undefined' && process.versions && process.versions.node) {
                 if (typeof globalThis.RTCPeerConnection === 'undefined') {
-                    console.log('🔧 Setting up WebRTC polyfill for Node.js...');
                     
                     try {
                         // Import the wrtc polyfill at runtime
@@ -50,18 +49,12 @@ fun setupWebRTCPolyfill() {
                         globalThis.RTCDataChannel = wrtc.RTCDataChannel;
                         globalThis.MediaStream = wrtc.MediaStream;
                         globalThis.MediaStreamTrack = wrtc.MediaStreamTrack;
-                        
-                        console.log('✅ WebRTC polyfill configured successfully for Node.js');
                     } catch (e) {
                         console.warn('⚠️  WebRTC polyfill setup failed. Please install @roamhq/wrtc:');
                         console.warn('   npm install @roamhq/wrtc');
                         console.warn('   Error:', e.message);
                     }
-                } else {
-                    console.log('✅ WebRTC APIs already available');
                 }
-            } else {
-                console.log('🌐 Browser environment detected - using native WebRTC APIs');
             }
         } catch (e) {
             console.warn('⚠️  WebRTC environment detection failed:', e.message);
