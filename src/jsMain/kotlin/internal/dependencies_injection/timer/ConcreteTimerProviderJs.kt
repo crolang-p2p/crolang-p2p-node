@@ -29,6 +29,17 @@ import internal.setTimeout
  */
 internal class ConcreteTimerProviderJs : TimerProvider() {
     
+    /**
+     * Creates a new cancelable timer with the specified delay and callback.
+     * 
+     * This method creates a timer using JavaScript's setTimeout function that will
+     * execute the provided callback after the specified delay. The returned timer
+     * can be canceled before it fires.
+     * 
+     * @param delayMs Delay in milliseconds before the timer fires
+     * @param onTimeout Callback function to execute when the timer fires
+     * @return A cancelable timer instance
+     */
     override fun createTimer(delayMs: Int, onTimeout: () -> Unit): CancelableTimer {
         return ConcreteJsCancelableTimer(delayMs, onTimeout)
     }
@@ -56,6 +67,13 @@ internal class ConcreteJsCancelableTimer(delayMs: Int, onTimeout: () -> Unit) : 
         }, delay)
     }
     
+    /**
+     * Cancels the timer if it hasn't already fired or been canceled.
+     * 
+     * This method uses JavaScript's clearTimeout to cancel the underlying timer.
+     * After cancellation, the timer callback will not be executed. Multiple calls
+     * to cancel() are safe and have no effect after the first call.
+     */
     override fun cancel() {
         if (!isCancelled && timerId != null) {
             clearTimeout(timerId!!)

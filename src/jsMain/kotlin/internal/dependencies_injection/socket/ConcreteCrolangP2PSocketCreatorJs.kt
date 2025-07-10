@@ -28,6 +28,18 @@ import internal.dependencies.socket.CrolangP2PSocketCreator
  */
 internal class ConcreteCrolangP2PSocketCreatorJs : CrolangP2PSocketCreator() {
 
+    /**
+     * Creates a new CroLang P2P socket connection to a broker.
+     * 
+     * This method establishes a Socket.IO connection with the specified broker using
+     * WebSocket transport. The connection includes authentication data and node
+     * identification information in the query parameters.
+     * 
+     * @param localNodeId The unique identifier for this node
+     * @param myVersion The version of this node's library
+     * @param onConnectionToBrokerSettings Connection settings including broker address and auth data
+     * @return A socket instance ready for broker communication
+     */
     override fun create(
         localNodeId: String, myVersion: String, onConnectionToBrokerSettings: OnConnectionToBrokerSettings
     ): CrolangP2PSocket {
@@ -71,14 +83,29 @@ internal class ConcreteCrolangP2PSocketCreatorJs : CrolangP2PSocketCreator() {
         return query
     }
 
+    /**
+     * Returns the Socket.IO event name for successful connection.
+     * 
+     * @return The "connect" event name used by Socket.IO
+     */
     override fun eventConnect(): String {
         return SocketIOEvents.CONNECT
     }
 
+    /**
+     * Returns the Socket.IO event name for disconnection.
+     * 
+     * @return The "disconnect" event name used by Socket.IO
+     */
     override fun eventDisconnect(): String {
         return SocketIOEvents.DISCONNECT
     }
 
+    /**
+     * Returns the Socket.IO event name for connection errors.
+     * 
+     * @return The "connect_error" event name used by Socket.IO
+     */
     override fun eventConnectionError(): String {
         return SocketIOEvents.CONNECT_ERROR
     }

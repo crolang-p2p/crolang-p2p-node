@@ -38,6 +38,20 @@ import internal.dependencies_injection.webrtc.ConcreteCrolangP2PPeerConnectionFa
  */
 internal object DependenciesInjectionProviderJs {
 
+    /**
+     * Creates and returns a complete dependencies injection configuration for JavaScript/Node.js.
+     * 
+     * This method assembles all platform-specific implementations required by the CroLang P2P
+     * library to operate in JavaScript/Node.js environments. It provides:
+     * - Event loop implementation using Node.js event loop
+     * - Socket creation using WebSocket APIs
+     * - WebRTC peer connection factory for P2P communications
+     * - UUID generation using crypto APIs
+     * - Timestamp and timer providers using JavaScript timing APIs
+     * - Sleep and executor providers adapted for JavaScript's async model
+     * 
+     * @return Complete dependency injection configuration for JavaScript/Node.js runtime
+     */
     fun getDependencies(): DependenciesInjection {
         return DependenciesInjection(
             myPlatform = BuildConfig.MY_PLATFORM,

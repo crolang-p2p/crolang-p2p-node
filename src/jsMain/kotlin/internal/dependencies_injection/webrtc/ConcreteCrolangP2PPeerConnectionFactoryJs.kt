@@ -31,6 +31,20 @@ import internal.dependencies.webrtc.contracts.CrolangP2PRTCPeerConnection
  */
 internal class ConcreteCrolangP2PPeerConnectionFactoryJs : CrolangP2PPeerConnectionFactory() {
 
+    /**
+     * Creates a new WebRTC peer connection for JavaScript/Node.js environments.
+     * 
+     * This method creates a peer connection that bridges the webrtc-kmp library's
+     * Flow-based API with the callback-based API expected by crolang-p2p-node.
+     * The resulting connection supports ICE candidate exchange, connection state
+     * monitoring, and data channel creation.
+     * 
+     * @param rtcConfiguration WebRTC configuration including STUN/TURN servers
+     * @param onIceCandidate Callback for handling ICE candidates discovered during negotiation
+     * @param onConnectionChange Callback for monitoring peer connection state changes
+     * @param onDataChannel Callback for handling incoming data channels from the remote peer
+     * @return A configured peer connection ready for WebRTC negotiation
+     */
     override fun createPeerConnection(
         rtcConfiguration: CrolangP2PRTCConfiguration,
         onIceCandidate: (CrolangP2PIceCandidate) -> Unit,

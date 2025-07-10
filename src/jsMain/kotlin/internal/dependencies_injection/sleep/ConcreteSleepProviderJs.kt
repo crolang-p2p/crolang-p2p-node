@@ -38,6 +38,18 @@ external class Date() {
  */
 internal class ConcreteSleepProviderJs : SleepProvider() {
     
+    /**
+     * Blocks the current execution thread for the specified number of milliseconds.
+     * 
+     * Note: This implementation uses a busy-wait approach since JavaScript doesn't
+     * provide true blocking sleep like JVM's Thread.sleep(). This method should be
+     * used sparingly and only for short durations to avoid blocking the event loop.
+     * 
+     * For longer delays or non-blocking behavior, prefer asynchronous patterns with
+     * Promises and setTimeout in JavaScript applications.
+     * 
+     * @param millis Number of milliseconds to sleep (if <= 0, returns immediately)
+     */
     override fun sleep(millis: Int) {
         if (millis <= 0) return
         

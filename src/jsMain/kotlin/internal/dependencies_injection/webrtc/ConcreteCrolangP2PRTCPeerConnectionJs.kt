@@ -95,6 +95,14 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
             .launchIn(scope)
     }
 
+    /**
+     * Creates a new data channel for sending messages to the remote peer.
+     * 
+     * This method creates an ordered data channel with the label "crolang-messages"
+     * that can be used for reliable message transmission.
+     * 
+     * @return A new [CrolangP2PRTCDataChannel] for sending/receiving data
+     */
     override fun createDataChannel(): CrolangP2PRTCDataChannel {
         val webrtcKmpDataChannel = webrtcKmpPeerConnection.createDataChannel(
             label = "crolang-messages",
@@ -103,6 +111,14 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
         return ConcreteCrolangP2PRTCDataChannelJs(webrtcKmpDataChannel!!)
     }
 
+    /**
+     * Adds an ICE candidate to the peer connection.
+     * 
+     * ICE candidates contain connectivity information that helps establish
+     * a direct connection between peers.
+     * 
+     * @param iceCandidate The ICE candidate to add
+     */
     override fun addIceCandidate(iceCandidate: CrolangP2PIceCandidate) {
         scope.launch {
             with(WebRTCKmpToCrolangP2PMapper) {
@@ -111,6 +127,15 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
         }
     }
 
+    /**
+     * Creates an SDP offer for initiating a WebRTC connection.
+     * 
+     * The offer contains information about the capabilities and preferences
+     * of the local peer. This is typically the first step in WebRTC negotiation.
+     * 
+     * @param onSuccess Callback invoked with the created offer description
+     * @param onFailure Callback invoked if offer creation fails
+     */
     override fun createOffer(
         onSuccess: (description: CrolangP2PRTCSessionDescription) -> Unit,
         onFailure: (error: String?) -> Unit
@@ -132,6 +157,15 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
         }
     }
 
+    /**
+     * Creates an SDP answer in response to a received offer.
+     * 
+     * The answer contains information about the local peer's capabilities
+     * and confirms the parameters for the WebRTC connection.
+     * 
+     * @param onSuccess Callback invoked with the created answer description
+     * @param onFailure Callback invoked if answer creation fails
+     */
     override fun createAnswer(
         onSuccess: (description: CrolangP2PRTCSessionDescription) -> Unit,
         onFailure: (error: String?) -> Unit
@@ -148,6 +182,16 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
         }
     }
 
+    /**
+     * Sets the local session description for this peer connection.
+     * 
+     * This method configures the local peer's capabilities and preferences
+     * as described in the session description (offer or answer).
+     * 
+     * @param description The session description to set as the local description
+     * @param onSuccess Callback invoked when the operation completes successfully
+     * @param onFailure Callback invoked if the operation fails
+     */
     override fun setLocalDescription(
         description: CrolangP2PRTCSessionDescription,
         onSuccess: () -> Unit,
@@ -165,6 +209,16 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
         }
     }
 
+    /**
+     * Sets the remote session description for this peer connection.
+     * 
+     * This method configures the remote peer's capabilities and preferences
+     * as described in the received session description (offer or answer).
+     * 
+     * @param description The session description received from the remote peer
+     * @param onSuccess Callback invoked when the operation completes successfully
+     * @param onFailure Callback invoked if the operation fails
+     */
     override fun setRemoteDescription(
         description: CrolangP2PRTCSessionDescription,
         onSuccess: () -> Unit,
@@ -182,10 +236,22 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
         }
     }
 
+    /**
+     * Gets the current connection state of the peer connection.
+     * 
+     * @return The current [CrolangP2PRTCPeerConnectionState] indicating the
+     *         connection status (new, connecting, connected, disconnected, etc.)
+     */
     override fun connectionState(): CrolangP2PRTCPeerConnectionState {
         return webrtcKmpPeerConnection.connectionState.toCrolangP2PConnectionState()
     }
 
+    /**
+     * Closes the peer connection and releases all associated resources.
+     * 
+     * This method cancels all coroutines and closes the underlying WebRTC
+     * peer connection, terminating the connection to the remote peer.
+     */
     override fun close() {
         scope.cancel() // Cancel all coroutines
         webrtcKmpPeerConnection.close()

@@ -32,6 +32,19 @@ import internal.setImmediate
  */
 internal class ConcreteExecutorProviderJs : ExecutorProvider {
     
+    /**
+     * Executes a task asynchronously using the Node.js event loop.
+     * 
+     * This method schedules the provided task to be executed on the next iteration
+     * of the Node.js event loop using setImmediate(). This provides non-blocking
+     * execution in JavaScript's single-threaded environment, equivalent to
+     * thread pool execution in the JVM.
+     * 
+     * The task execution is wrapped in exception handling to match JVM behavior
+     * where executor failures are silently handled.
+     * 
+     * @param task The function to execute asynchronously
+     */
     override fun executeAsync(task: () -> Unit) {
         try {
             // Schedule the task to be executed on the next tick of the Node.js event loop
