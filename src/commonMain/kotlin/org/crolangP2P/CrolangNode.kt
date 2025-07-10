@@ -19,15 +19,10 @@ package org.crolangP2P
 import internal.node.AbstractNode
 import internal.node.NodeState
 import internal.utils.SharedStore.logger
-import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
-import kotlin.js.JsName
 
 /**
  * Represents the P2P connection with another remote Node in the Broker.
  */
-@OptIn(ExperimentalJsExport::class)
-@JsExport
 class CrolangNode private constructor(private val abstractNode: AbstractNode) {
 
     /**
@@ -72,7 +67,6 @@ class CrolangNode private constructor(private val abstractNode: AbstractNode) {
      * @see SyncCrolangNodeCallbacks.onNewMsg
      * @see AsyncCrolangNodeCallbacks.onNewMsg
      */
-    @JsName("sendEmpty")
     fun send(channel: String): Boolean {
         return abstractNode.sendP2PMsg(channel, "")
     }
@@ -118,8 +112,6 @@ class CrolangNode private constructor(private val abstractNode: AbstractNode) {
 /**
  * Represents the state of a CrolangNode.
  */
-@OptIn(ExperimentalJsExport::class)
-@JsExport
 enum class CrolangNodeState {
     /**
      * The Node is in the process of connecting to the other Node.

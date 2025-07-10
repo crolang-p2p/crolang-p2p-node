@@ -22,7 +22,7 @@ import org.crolangP2P.CrolangNodeState
  */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
-class CrolangNodeJs(private val node: CrolangNode) {
+class CrolangNodeJs internal constructor(private val node: CrolangNode) {
 
     val id: String = node.id
 

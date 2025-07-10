@@ -18,7 +18,7 @@ import org.crolangP2P.ConnectionAttempt
 
 @OptIn(ExperimentalJsExport::class)
 @JsExport
-class ConnectionAttemptJs(private val attempt: ConnectionAttempt) {
+class ConnectionAttemptJs internal constructor(private val attempt: ConnectionAttempt) {
 
     fun isConcluded(): Boolean {
         return attempt.isConcluded()

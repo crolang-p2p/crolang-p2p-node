@@ -32,7 +32,7 @@ enum class ConnectionToNodeFailedReasonJs {
     DISABLED;
 
     internal object Converter{
-        fun fromConnectionToNodeFailedReasonException(
+        internal fun fromConnectionToNodeFailedReasonException(
             exception: ConnectionToNodeFailedReasonException
         ): ConnectionToNodeFailedReasonJs {
             return when (exception) {

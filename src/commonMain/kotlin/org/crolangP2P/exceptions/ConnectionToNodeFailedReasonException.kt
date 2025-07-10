@@ -16,10 +16,17 @@
 
 package org.crolangP2P.exceptions
 
-import org.crolangP2P.P2PConnectionFailedReason
 import org.crolangP2P.IncomingCrolangNodesCallbacks
-import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
+import org.crolangP2P.P2PConnectionFailedReason
+import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException.AlreadyConnectedToRemoteNode
+import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException.ConnectionAttemptClosedByUserForcefully
+import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException.ConnectionNegotiationError
+import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException.ConnectionRefusedByRemoteNode
+import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException.ConnectionTimeout
+import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException.ConnectionsNotAllowedOnRemoteNode
+import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException.LocalNodeNotConnectedToBroker
+import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException.RemoteNodeNotConnectedToBroker
+import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException.TriedToConnectToSelf
 
 /**
  * Exception thrown when trying to connect to another Node.
@@ -34,8 +41,6 @@ import kotlin.js.JsExport
  * @see ConnectionRefusedByRemoteNode
  * @see ConnectionsNotAllowedOnRemoteNode
  */
-@OptIn(ExperimentalJsExport::class)
-@JsExport
 sealed class ConnectionToNodeFailedReasonException(
     /**
      * The reason for the connection failure while trying to connect to another Node.
