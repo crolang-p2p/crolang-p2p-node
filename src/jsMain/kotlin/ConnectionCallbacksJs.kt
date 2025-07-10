@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import org.crolangP2P.CrolangNode
 import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
 
 @OptIn(ExperimentalJsExport::class)
@@ -22,10 +21,10 @@ import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
 class IncomingCrolangNodesCallbacksJs {
 
     private var onConnectionAttempt: (id: String, platform: String, version: String) -> Boolean = { _, _, _ -> true }
-    private var onConnectionSuccess: (node: CrolangNode) -> Unit = {}
-    private var onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> }
+    private var onConnectionSuccess: (node: CrolangNodeJs) -> Unit = {}
+    private var onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit = { _, _ -> }
     private var onDisconnection: (id: String) -> Unit = {}
-    private var onNewMsq: Map<String, (CrolangNode, String) -> Unit> = emptyMap()
+    private var onNewMsq: Map<String, (CrolangNodeJs, String) -> Unit> = emptyMap()
 
     fun setOnConnectionAttempt(
         callback: (id: String, platform: String, version: String) -> Boolean
@@ -38,23 +37,23 @@ class IncomingCrolangNodesCallbacksJs {
         return onConnectionAttempt
     }
 
-    fun setOnConnectionSuccess(callback: (node: CrolangNode) -> Unit): IncomingCrolangNodesCallbacksJs {
+    fun setOnConnectionSuccess(callback: (node: CrolangNodeJs) -> Unit): IncomingCrolangNodesCallbacksJs {
         onConnectionSuccess = callback
         return this
     }
 
-    fun getOnConnectionSuccess(): (node: CrolangNode) -> Unit {
+    fun getOnConnectionSuccess(): (node: CrolangNodeJs) -> Unit {
         return onConnectionSuccess
     }
 
     fun setOnConnectionFailed(
-        callback: (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit
+        callback: (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit
     ): IncomingCrolangNodesCallbacksJs {
         onConnectionFailed = callback
         return this
     }
 
-    fun getOnConnectionFailed(): (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit {
+    fun getOnConnectionFailed(): (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit {
         return onConnectionFailed
     }
 
@@ -67,12 +66,12 @@ class IncomingCrolangNodesCallbacksJs {
         return onDisconnection
     }
 
-    fun addOnNewMsgCallback(channel: String, callback: (CrolangNode, String) -> Unit): IncomingCrolangNodesCallbacksJs {
+    fun addOnNewMsgCallback(channel: String, callback: (CrolangNodeJs, String) -> Unit): IncomingCrolangNodesCallbacksJs {
         onNewMsq = onNewMsq + (channel to callback)
         return this
     }
 
-    fun getOnNewMsgCallbacks(): Map<String, (CrolangNode, String) -> Unit> {
+    fun getOnNewMsgCallbacks(): Map<String, (CrolangNodeJs, String) -> Unit> {
         return onNewMsq
     }
 
@@ -91,26 +90,26 @@ object IncomingCrolangNodesCallbacksJsBuilder {
 @JsExport
 class CrolangNodeCallbacksJs {
 
-    private var onConnectionSuccess: (node: CrolangNode) -> Unit = {}
-    private var onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> }
+    private var onConnectionSuccess: (node: CrolangNodeJs) -> Unit = {}
+    private var onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit = { _, _ -> }
     private var onDisconnection: (id: String) -> Unit = {}
-    private var onNewMsq: Map<String, (CrolangNode, String) -> Unit> = emptyMap()
+    private var onNewMsq: Map<String, (CrolangNodeJs, String) -> Unit> = emptyMap()
 
-    fun setOnConnectionSuccess(callback: (node: CrolangNode) -> Unit): CrolangNodeCallbacksJs {
+    fun setOnConnectionSuccess(callback: (node: CrolangNodeJs) -> Unit): CrolangNodeCallbacksJs {
         onConnectionSuccess = callback
         return this
     }
 
-    fun getOnConnectionSuccess(): (node: CrolangNode) -> Unit {
+    fun getOnConnectionSuccess(): (node: CrolangNodeJs) -> Unit {
         return onConnectionSuccess
     }
 
-    fun setOnConnectionFailed(callback: (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit): CrolangNodeCallbacksJs {
+    fun setOnConnectionFailed(callback: (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit): CrolangNodeCallbacksJs {
         onConnectionFailed = callback
         return this
     }
 
-    fun getOnConnectionFailed(): (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit {
+    fun getOnConnectionFailed(): (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit {
         return onConnectionFailed
     }
 
@@ -123,12 +122,12 @@ class CrolangNodeCallbacksJs {
         return onDisconnection
     }
 
-    fun addOnNewMsgCallback(channel: String, callback: (CrolangNode, String) -> Unit): CrolangNodeCallbacksJs {
+    fun addOnNewMsgCallback(channel: String, callback: (CrolangNodeJs, String) -> Unit): CrolangNodeCallbacksJs {
         onNewMsq = onNewMsq + (channel to callback)
         return this
     }
 
-    fun getOnNewMsgCallbacks(): Map<String, (CrolangNode, String) -> Unit> {
+    fun getOnNewMsgCallbacks(): Map<String, (CrolangNodeJs, String) -> Unit> {
         return onNewMsq
     }
 }

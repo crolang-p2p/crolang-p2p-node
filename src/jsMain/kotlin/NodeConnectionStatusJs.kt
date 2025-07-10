@@ -21,4 +21,4 @@
  */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
-class NodeConnectionStatus(val id: String, val status: Boolean)
+class NodeConnectionStatusJs(val id: String, val status: Boolean)

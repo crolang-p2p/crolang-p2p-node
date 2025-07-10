@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import ConnectionToNodeFailedReasonJs.Converter.fromConnectionToNodeFailedReasonException
 import internal.dependencies_injection.DependenciesInjectionProviderJs
 import internal.dependencies_injection.webrtc.setupWebRTCPolyfill
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -31,7 +32,7 @@ import org.crolangP2P.LoggingOptions
 
 @OptIn(ExperimentalJsExport::class)
 @JsExport
-object CrolangP2P {
+object CrolangP2PJs {
 
     private val coreFacade = CoreCrolangP2PFacade(DependenciesInjectionProviderJs.getDependencies())
     
@@ -49,7 +50,7 @@ object CrolangP2P {
         nodeId: String,
         onNewSocketMsg: OnNewSocketMsgJs,
         additionalParameters: BrokerConnectionAdditionalParametersJs
-    ): kotlin.js.Promise<CrolangP2P> {
+    ): kotlin.js.Promise<CrolangP2PJs> {
         return connectToBrokerWithAuthentication(
             brokerAddress,
             nodeId,
@@ -66,7 +67,7 @@ object CrolangP2P {
         onConnectionAttemptData: String,
         onNewSocketMsg: OnNewSocketMsgJs,
         additionalParameters: BrokerConnectionAdditionalParametersJs
-    ): kotlin.js.Promise<CrolangP2P> {
+    ): kotlin.js.Promise<CrolangP2PJs> {
         val additionalParametersKotlin = BrokerConnectionAdditionalParameters(
             lifecycleCallbacks = BrokerLifecycleCallbacks(
                 onInvoluntaryDisconnection = additionalParameters.getLifecycleCallbacks().getOnInvoluntaryDisconnection(),
@@ -93,15 +94,15 @@ object CrolangP2P {
                 onNewSocketMsg = onNewSocketMsg.getListeners(),
                 additionalParameters = additionalParametersKotlin
             ).getOrThrow()
-            CrolangP2P
+            CrolangP2PJs
         }
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    fun disconnectFromBroker(): kotlin.js.Promise<CrolangP2P> {
+    fun disconnectFromBroker(): kotlin.js.Promise<CrolangP2PJs> {
         return GlobalScope.promise {
             coreFacade.disconnectFromBroker()
-            CrolangP2P
+            CrolangP2PJs
         }
     }
 
@@ -110,19 +111,19 @@ object CrolangP2P {
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    fun sendSocketMsg(id: String, channel: String, msg: String): kotlin.js.Promise<CrolangP2P> {
+    fun sendSocketMsg(id: String, channel: String, msg: String): kotlin.js.Promise<CrolangP2PJs> {
         return GlobalScope.promise {
             coreFacade.sendSocketMsg(id, channel, msg) //TODO handle exceptions properly
-            CrolangP2P
+            CrolangP2PJs
         }
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    fun areRemoteNodesConnectedToBroker(ids: Array<String>): kotlin.js.Promise<Array<NodeConnectionStatus>>{
+    fun areRemoteNodesConnectedToBroker(ids: Array<String>): kotlin.js.Promise<Array<NodeConnectionStatusJs>>{
         return GlobalScope.promise {
             return@promise coreFacade.areRemoteNodesConnectedToBroker(ids.toSet())
                 .getOrElse { throw it }
-                .map { (nodeId, isConnected) -> NodeConnectionStatus(nodeId, isConnected) }
+                .map { (nodeId, isConnected) -> NodeConnectionStatusJs(nodeId, isConnected) }
                 .toTypedArray()
         }
     }
@@ -137,10 +138,14 @@ object CrolangP2P {
     fun allowIncomingConnections(callbacks: IncomingCrolangNodesCallbacksJs) {
         coreFacade.allowIncomingConnections(IncomingCrolangNodesCallbacks(
             onConnectionAttempt = callbacks.getOnConnectionAttempt(),
-            onConnectionSuccess = callbacks.getOnConnectionSuccess(),
-            onConnectionFailed = callbacks.getOnConnectionFailed(),
+            onConnectionSuccess = { callbacks.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
+            onConnectionFailed = { id, reason ->
+                callbacks.getOnConnectionFailed().invoke(id, fromConnectionToNodeFailedReasonException(reason))
+            },
             onDisconnection = callbacks.getOnDisconnection(),
-            onNewMsg = callbacks.getOnNewMsgCallbacks()
+            onNewMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
+                { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
+            }
         ))
     }
 
@@ -148,32 +153,40 @@ object CrolangP2P {
         coreFacade.stopIncomingConnections()
     }
 
-    fun getAllConnectedNodes(): Array<CrolangNode> {
-        return coreFacade.getAllConnectedNodes().map { it.value }.toTypedArray()
+    fun getAllConnectedNodes(): Array<CrolangNodeJs> {
+        return coreFacade.getAllConnectedNodes().map { CrolangNodeJs(it.value) }.toTypedArray()
     }
 
-    fun getConnectedNode(id: String): CrolangNode? {
-        return coreFacade.getConnectedNode(id)
+    fun getConnectedNode(id: String): CrolangNodeJs? {
+        return coreFacade.getConnectedNode(id)?.let { CrolangNodeJs(it) }
     }
 
-    fun connectToSingleNode(id: String, callbacks: CrolangNodeCallbacksJs): ConnectionAttempt {
-        return coreFacade.connectToSingleNodeAsync(id, AsyncCrolangNodeCallbacks(
-            onConnectionSuccess = callbacks.getOnConnectionSuccess(),
-            onConnectionFailed = callbacks.getOnConnectionFailed(),
+    fun connectToSingleNode(id: String, callbacks: CrolangNodeCallbacksJs): ConnectionAttemptJs {
+        return ConnectionAttemptJs(coreFacade.connectToSingleNodeAsync(id, AsyncCrolangNodeCallbacks(
+            onConnectionSuccess = { callbacks.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
+            onConnectionFailed = { onConnectionFailedId, reason -> callbacks.getOnConnectionFailed().invoke(
+                onConnectionFailedId, fromConnectionToNodeFailedReasonException(reason)
+            ) },
             onDisconnection = callbacks.getOnDisconnection(),
-            onNewMsg = callbacks.getOnNewMsgCallbacks()
-        ))
+            onNewMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
+                { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
+            }
+        )))
     }
 
-    fun connectToMultipleNodes(targets: CrolangNodeConnectionTargetsJs): ConnectionAttempt {
-        return coreFacade.connectToMultipleNodesAsync(
-            targets.getTargets().mapValues { AsyncCrolangNodeCallbacks(
-                onConnectionSuccess = it.value.getOnConnectionSuccess(),
-                onConnectionFailed = it.value.getOnConnectionFailed(),
-                onDisconnection = it.value.getOnDisconnection(),
-                onNewMsg = it.value.getOnNewMsgCallbacks()
+    fun connectToMultipleNodes(targets: CrolangNodeConnectionTargetsJs): ConnectionAttemptJs {
+        return ConnectionAttemptJs(coreFacade.connectToMultipleNodesAsync(
+            targets.getTargets().mapValues { target -> AsyncCrolangNodeCallbacks(
+                onConnectionSuccess = { target.value.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
+                onConnectionFailed = { id, reason ->
+                    target.value.getOnConnectionFailed().invoke(id, fromConnectionToNodeFailedReasonException(reason))
+                },
+                onDisconnection = target.value.getOnDisconnection(),
+                onNewMsg = target.value.getOnNewMsgCallbacks().mapValues { (_, callback) ->
+                    { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
+                }
             ) }
-        )
+        ))
     }
 
 }
