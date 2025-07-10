@@ -18,22 +18,49 @@ import org.crolangP2P.CrolangNode
 import org.crolangP2P.CrolangNodeState
 
 /**
- * Represents the P2P connection with another remote Node in the Broker.
+ * Represents a P2P connection to a remote node.
+ * 
+ * This class provides the interface for interacting with a connected peer node, allowing you to:
+ * - Send messages on different channels
+ * - Monitor connection state
+ * - Disconnect from the peer
+ * - Access peer information (ID, platform, version)
+ * 
+ * Node instances are created automatically when connections are established and passed
+ * to your connection success callbacks.
  */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
 class CrolangNodeJs internal constructor(private val node: CrolangNode) {
 
+    /** The unique identifier of the remote node */
     val id: String = node.id
 
+    /** The platform/runtime of the remote node (e.g., "JVM", "JavaScript") */
     val platform: String = node.platform
 
+    /** The library version of the remote node */
     val version: String = node.version
 
+    /**
+     * Sends a message to the remote node on the specified channel.
+     * 
+     * Messages are transmitted directly over the P2P connection using WebRTC data channels.
+     * Large messages are automatically split and reassembled on the receiving end.
+     * 
+     * @param channel The message channel to send on
+     * @param msg The message content to send
+     * @return true if the message was queued for sending, false otherwise
+     */
     fun send(channel: String, msg: String): Boolean {
         return node.send(channel, msg)
     }
 
+    /**
+     * Gets the current connection state of this node.
+     * 
+     * @return The current state (CONNECTING, CONNECTED, or DISCONNECTED)
+     */
     fun getState(): CrolangNodeStateJs {
         return when(node.getState()){
             CrolangNodeState.CONNECTING -> CrolangNodeStateJs.CONNECTING
@@ -42,27 +69,45 @@ class CrolangNodeJs internal constructor(private val node: CrolangNode) {
         }
     }
 
+    /**
+     * Disconnects from the remote node.
+     * 
+     * This closes the P2P connection and triggers the disconnection callback.
+     * After calling this method, the node cannot be used for sending messages.
+     */
     fun disconnect() {
         node.disconnect()
     }
 
 }
 
+/**
+ * Enumeration of possible P2P connection states.
+ * 
+ * This enum tracks the lifecycle of a P2P connection from initial negotiation
+ * through active communication to final disconnection.
+ */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
 enum class CrolangNodeStateJs {
     /**
-     * The Node is in the process of connecting to the other Node.
+     * The node is in the process of establishing a P2P connection.
+     * 
+     * During this state, WebRTC negotiation is ongoing and messages cannot be sent yet.
      */
     CONNECTING,
 
     /**
-     * The Node is connected to the other Node.
+     * The node has an active P2P connection.
+     * 
+     * In this state, messages can be sent and received reliably.
      */
     CONNECTED,
 
     /**
-     * The Node is disconnected from the other Node.
+     * The node is disconnected and cannot communicate.
+     * 
+     * This is the final state after disconnection, either voluntary or due to errors.
      */
     DISCONNECTED
 }

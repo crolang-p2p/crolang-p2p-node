@@ -30,6 +30,9 @@ import org.crolangP2P.CrolangSettings
 import org.crolangP2P.IncomingCrolangNodesCallbacks
 import org.crolangP2P.LoggingOptions
 
+/**
+ * Main entry point for the CrolangP2P library in JavaScript/Node.js environments.
+ */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
 object CrolangP2PJs {
@@ -41,10 +44,27 @@ object CrolangP2PJs {
         setupWebRTCPolyfill()
     }
 
+    /**
+     * Checks if the local node is currently connected to the Broker.
+     * 
+     * @return true if connected to the Broker, false otherwise
+     */
     fun isLocalNodeConnectedToBroker(): Boolean {
         return coreFacade.isLocalNodeConnectedToBroker()
     }
 
+    /**
+     * Connects to a CrolangP2P broker server.
+     * 
+     * This establishes the signaling connection required for P2P node discovery and connection setup.
+     * Once connected to a broker, you can connect to other nodes or allow incoming connections.
+     * 
+     * @param brokerAddress The WebSocket address of the broker
+     * @param nodeId Your unique node identifier
+     * @param onNewSocketMsg Callbacks for handling broker messages
+     * @param additionalParameters Connection configuration (callbacks, settings, logging)
+     * @return Promise that resolves when connection is established
+     */
     fun connectToBroker(
         brokerAddress: String,
         nodeId: String,
@@ -60,6 +80,19 @@ object CrolangP2PJs {
         )
     }
 
+    /**
+     * Connects to a CrolangP2P broker server with authentication data.
+     * 
+     * This method allows you to provide authentication data that will be sent
+     * to the broker's authentication webhook (if configured).
+     * 
+     * @param brokerAddress The WebSocket address of the broker
+     * @param nodeId Your unique node identifier
+     * @param onConnectionAttemptData Authentication data to send to the broker
+     * @param onNewSocketMsg Callbacks for handling broker messages
+     * @param additionalParameters Connection configuration
+     * @return Promise that resolves when connection is established
+     */
     @OptIn(DelicateCoroutinesApi::class)
     fun connectToBrokerWithAuthentication(
         brokerAddress: String,
@@ -98,6 +131,14 @@ object CrolangP2PJs {
         }
     }
 
+    /**
+     * Disconnects from the current broker.
+     * 
+     * Currently active P2P connections will NOT be closed.
+     * After disconnection, you cannot connect to new nodes until reconnecting to a broker.
+     * 
+     * @return Promise that resolves when disconnection is complete
+     */
     @OptIn(DelicateCoroutinesApi::class)
     fun disconnectFromBroker(): kotlin.js.Promise<CrolangP2PJs> {
         return GlobalScope.promise {
@@ -106,10 +147,26 @@ object CrolangP2PJs {
         }
     }
 
+    /**
+     * Checks if this node is currently accepting incoming connections.
+     * 
+     * @return true if incoming connections are allowed, false otherwise
+     */
     fun areIncomingConnectionsAllowed(): Boolean {
         return coreFacade.areIncomingConnectionsAllowed()
     }
 
+    /**
+     * Sends a message to a remote node through the broker.
+     * 
+     * This sends messages via the broker's signaling connection rather than
+     * direct P2P.
+     * 
+     * @param id The target node's identifier
+     * @param channel The message channel/topic
+     * @param msg The message content
+     * @return Promise that resolves when message is sent
+     */
     @OptIn(DelicateCoroutinesApi::class)
     fun sendSocketMsg(id: String, channel: String, msg: String): kotlin.js.Promise<CrolangP2PJs> {
         return GlobalScope.promise {
@@ -118,6 +175,12 @@ object CrolangP2PJs {
         }
     }
 
+    /**
+     * Checks the broker connection status of multiple remote nodes.
+     * 
+     * @param ids Array of node identifiers to check
+     * @return Promise resolving to array of connection status objects
+     */
     @OptIn(DelicateCoroutinesApi::class)
     fun areRemoteNodesConnectedToBroker(ids: Array<String>): kotlin.js.Promise<Array<NodeConnectionStatusJs>>{
         return GlobalScope.promise {
@@ -128,6 +191,12 @@ object CrolangP2PJs {
         }
     }
 
+    /**
+     * Checks if a specific remote node is connected to the broker.
+     * 
+     * @param id The node identifier to check
+     * @return Promise resolving to true if the node is connected, false otherwise
+     */
     @OptIn(DelicateCoroutinesApi::class)
     fun isRemoteNodeConnectedToBroker(id: String): kotlin.js.Promise<Boolean> {
         return GlobalScope.promise {
@@ -135,6 +204,14 @@ object CrolangP2PJs {
         }
     }
 
+    /**
+     * Enables incoming P2P connections with specified callbacks.
+     * 
+     * After calling this method, other nodes can connect to this node.
+     * The provided callbacks will handle connection attempts and events.
+     * 
+     * @param callbacks Configuration for handling incoming connection events
+     */
     fun allowIncomingConnections(callbacks: IncomingCrolangNodesCallbacksJs) {
         coreFacade.allowIncomingConnections(IncomingCrolangNodesCallbacks(
             onConnectionAttempt = callbacks.getOnConnectionAttempt(),
@@ -149,18 +226,45 @@ object CrolangP2PJs {
         ))
     }
 
+    /**
+     * Disables incoming P2P connections.
+     * 
+     * After calling this method, other nodes will not be able to connect to this node.
+     * Existing connections remain active.
+     */
     fun stopIncomingConnections() {
         coreFacade.stopIncomingConnections()
     }
 
+    /**
+     * Gets all currently connected P2P nodes.
+     * 
+     * @return Array of connected node instances
+     */
     fun getAllConnectedNodes(): Array<CrolangNodeJs> {
         return coreFacade.getAllConnectedNodes().map { CrolangNodeJs(it.value) }.toTypedArray()
     }
 
+    /**
+     * Gets a specific connected node by its identifier.
+     * 
+     * @param id The node identifier to look for
+     * @return The connected node instance, or null if not found/connected
+     */
     fun getConnectedNode(id: String): CrolangNodeJs? {
         return coreFacade.getConnectedNode(id)?.let { CrolangNodeJs(it) }
     }
 
+    /**
+     * Initiates a P2P connection to a single remote node.
+     * 
+     * This establishes a direct WebRTC connection to the specified node.
+     * The connection process is asynchronous and status updates are provided via callbacks.
+     * 
+     * @param id The target node's unique identifier
+     * @param callbacks Handlers for connection events (success, failure, messages)
+     * @return Connection attempt object for monitoring and control
+     */
     fun connectToSingleNode(id: String, callbacks: CrolangNodeCallbacksJs): ConnectionAttemptJs {
         return ConnectionAttemptJs(coreFacade.connectToSingleNodeAsync(id, AsyncCrolangNodeCallbacks(
             onConnectionSuccess = { callbacks.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
@@ -174,6 +278,15 @@ object CrolangP2PJs {
         )))
     }
 
+    /**
+     * Initiates P2P connections to multiple remote nodes simultaneously.
+     * 
+     * This establishes direct WebRTC connections to all specified nodes concurrently.
+     * Each target node can have its own set of callbacks for handling events.
+     * 
+     * @param targets Configuration specifying target nodes and their respective callbacks
+     * @return Connection attempt object for monitoring and controlling all connections
+     */
     fun connectToMultipleNodes(targets: CrolangNodeConnectionTargetsJs): ConnectionAttemptJs {
         return ConnectionAttemptJs(coreFacade.connectToMultipleNodesAsync(
             targets.getTargets().mapValues { target -> AsyncCrolangNodeCallbacks(

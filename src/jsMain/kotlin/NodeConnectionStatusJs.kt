@@ -15,9 +15,14 @@
  */
 
 /**
- * Type-safe interface for node connection status mapping.
- * This interface represents a plain JavaScript object where keys are node IDs
- * and values are boolean connection status.
+ * Represents the connection status of a specific node to the broker.
+ * 
+ * This class provides a simple data structure for reporting whether
+ * a specific node is currently connected to the broker. Used as return
+ * type for bulk connection status queries.
+ * 
+ * @param id The unique identifier of the node
+ * @param status true if the node is connected to the broker, false otherwise
  */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
