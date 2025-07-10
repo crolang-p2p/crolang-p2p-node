@@ -25,7 +25,7 @@ import internal.dependencies.utils.SleepProvider
  */
 class ConcreteSleepProviderJvm : SleepProvider() {
     
-    override fun sleep(millis: Long) {
-        Thread.sleep(millis)
+    override fun sleep(millis: Int) {
+        Thread.sleep(millis.toLong())
     }
 }

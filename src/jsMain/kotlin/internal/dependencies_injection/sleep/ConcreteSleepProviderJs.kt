@@ -38,7 +38,7 @@ external class Date() {
  */
 internal class ConcreteSleepProviderJs : SleepProvider() {
     
-    override fun sleep(millis: Long) {
+    override fun sleep(millis: Int) {
         if (millis <= 0) return
         
         // JavaScript implementation of sleep using busy-wait with time checking

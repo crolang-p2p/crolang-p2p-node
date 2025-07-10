@@ -16,10 +16,10 @@
 
 package org.crolangP2P
 
-private const val DEFAULT_P2P_NODES_CONNECTION_TIMEOUT_MILLIS: Long = 30000
-private const val DEFAULT_MULTIPART_P2P_MESSAGE_TIMEOUT_MILLIS: Long = 60000
+private const val DEFAULT_P2P_NODES_CONNECTION_TIMEOUT_MILLIS: Int = 30000
+private const val DEFAULT_MULTIPART_P2P_MESSAGE_TIMEOUT_MILLIS: Int = 60000
 private const val DEFAULT_RECONNECTION: Boolean = true
-private const val DEFAULT_RECONNECTION_ATTEMPTS_DELTA_MS: Long = 2000
+private const val DEFAULT_RECONNECTION_ATTEMPTS_DELTA_MS: Int = 2000
 
 /**
  * Class representing settings for the Crolang library.
@@ -37,14 +37,14 @@ class CrolangSettings constructor(
     /**
      * Timeout for P2P connection attempts in milliseconds; 30000 by default.
      */
-    val p2pConnectionTimeoutMillis: Long = DEFAULT_P2P_NODES_CONNECTION_TIMEOUT_MILLIS,
+    val p2pConnectionTimeoutMillis: Int = DEFAULT_P2P_NODES_CONNECTION_TIMEOUT_MILLIS,
 
     /**
      * Timeout for multipart P2P messages in milliseconds
      * (if a message is too big it gets automatically split into smaller messages;
      * if all the parts are not delivered in time, a timeout occurs); 60000 by default.
      */
-    val multipartP2PMessageTimeoutMillis: Long = DEFAULT_MULTIPART_P2P_MESSAGE_TIMEOUT_MILLIS,
+    val multipartP2PMessageTimeoutMillis: Int = DEFAULT_MULTIPART_P2P_MESSAGE_TIMEOUT_MILLIS,
 
     /**
      * Flag indicating whether to attempt reconnection after disconnection; true by default.
@@ -59,5 +59,5 @@ class CrolangSettings constructor(
     /**
      * Time in milliseconds between reconnection attempts; 2000 by default. Depends on the reconnection flag.
      */
-    val reconnectionAttemptsDeltaMs: Long = DEFAULT_RECONNECTION_ATTEMPTS_DELTA_MS
+    val reconnectionAttemptsDeltaMs: Int = DEFAULT_RECONNECTION_ATTEMPTS_DELTA_MS
 )

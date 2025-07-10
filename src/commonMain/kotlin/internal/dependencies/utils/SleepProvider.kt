@@ -29,5 +29,5 @@ abstract class SleepProvider {
      * 
      * @param millis The duration to sleep in milliseconds
      */
-    abstract fun sleep(millis: Long)
+    abstract fun sleep(millis: Int)
 }

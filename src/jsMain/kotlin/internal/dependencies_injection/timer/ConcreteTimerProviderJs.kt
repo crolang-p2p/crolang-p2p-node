@@ -29,7 +29,7 @@ import internal.setTimeout
  */
 internal class ConcreteTimerProviderJs : TimerProvider() {
     
-    override fun createTimer(delayMs: Long, onTimeout: () -> Unit): CancelableTimer {
+    override fun createTimer(delayMs: Int, onTimeout: () -> Unit): CancelableTimer {
         return ConcreteJsCancelableTimer(delayMs, onTimeout)
     }
 }
@@ -40,15 +40,14 @@ internal class ConcreteTimerProviderJs : TimerProvider() {
  * This implementation wraps the native setTimeout/clearTimeout functions
  * to provide a cancelable timer interface.
  */
-internal class ConcreteJsCancelableTimer(delayMs: Long, onTimeout: () -> Unit) : CancelableTimer() {
+internal class ConcreteJsCancelableTimer(delayMs: Int, onTimeout: () -> Unit) : CancelableTimer() {
     
     private var timerId: Int? = null
     private var isCancelled = false
     
     init {
         // JavaScript setTimeout accepts delay as Int (milliseconds)
-        // Convert Long to Int, capping at Int.MAX_VALUE for very large delays
-        val delay = if (delayMs > Int.MAX_VALUE) Int.MAX_VALUE else delayMs.toInt()
+        val delay = if (delayMs > Int.MAX_VALUE) Int.MAX_VALUE else delayMs
         
         timerId = setTimeout({
             if (!isCancelled) {

@@ -111,7 +111,7 @@ internal object SharedStore {
      * Number of reconnection attempts made to the Broker, initialized to 0.
      * This property tracks the number of attempts made to reconnect to the Broker after a disconnection.
      */
-    var reconnectionAttempts: Long = 0
+    var reconnectionAttempts: Int = 0
 
     /**
      * Nullable socket connection to the remote server, initially null.

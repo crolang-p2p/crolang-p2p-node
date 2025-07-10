@@ -27,7 +27,7 @@ import java.util.*
  */
 class ConcreteTimerProvider : TimerProvider() {
     
-    override fun createTimer(delayMs: Long, onTimeout: () -> Unit): CancelableTimer {
+    override fun createTimer(delayMs: Int, onTimeout: () -> Unit): CancelableTimer {
         return ConcreteJvmCancelableTimer(delayMs, onTimeout)
     }
 }
@@ -37,7 +37,7 @@ class ConcreteTimerProvider : TimerProvider() {
  * 
  * This implementation wraps java.util.Timer and TimerTask.
  */
-class ConcreteJvmCancelableTimer(delayMs: Long, onTimeout: () -> Unit) : CancelableTimer() {
+class ConcreteJvmCancelableTimer(delayMs: Int, onTimeout: () -> Unit) : CancelableTimer() {
     
     private val timer = Timer()
     
@@ -48,7 +48,7 @@ class ConcreteJvmCancelableTimer(delayMs: Long, onTimeout: () -> Unit) : Cancela
                     onTimeout()
                 }
             },
-            delayMs
+            delayMs.toLong()
         )
     }
     

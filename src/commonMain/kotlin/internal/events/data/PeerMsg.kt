@@ -135,7 +135,7 @@ internal class PeerMsgPartParsable {
  */
 internal class IncomingMultipartP2PMsg(
     firstMsgPart: PeerMsgPart,
-    timeoutMs: Long,
+    timeoutMs: Int,
     onTimeoutCallback: () -> Unit
 ) {
 

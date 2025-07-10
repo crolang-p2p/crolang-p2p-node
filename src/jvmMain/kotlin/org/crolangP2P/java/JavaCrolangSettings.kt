@@ -34,11 +34,11 @@ class JavaCrolangSettings {
         fun builder(): JavaCrolangSettings = JavaCrolangSettings()
     }
     
-    private var p2pConnectionTimeoutMillis: Long = 30000L
-    private var multipartP2PMessageTimeoutMillis: Long = 60000L
+    private var p2pConnectionTimeoutMillis: Int = 30000
+    private var multipartP2PMessageTimeoutMillis: Int = 60000
     private var reconnection: Boolean = true
     private var maxReconnectionAttempts: Int? = null
-    private var reconnectionAttemptsDeltaMs: Long = 2000L
+    private var reconnectionAttemptsDeltaMs: Int = 2000
 
     /**
      * Sets the P2P connection timeout in milliseconds.
@@ -46,7 +46,7 @@ class JavaCrolangSettings {
      * @param timeout the timeout in milliseconds
      * @return this builder instance
      */
-    fun p2pConnectionTimeoutMillis(timeout: Long) = apply {
+    fun p2pConnectionTimeoutMillis(timeout: Int) = apply {
         this.p2pConnectionTimeoutMillis = timeout
     }
 
@@ -56,7 +56,7 @@ class JavaCrolangSettings {
      * @param timeout the timeout in milliseconds
      * @return this builder instance
      */
-    fun multipartP2PMessageTimeoutMillis(timeout: Long) = apply {
+    fun multipartP2PMessageTimeoutMillis(timeout: Int) = apply {
         this.multipartP2PMessageTimeoutMillis = timeout
     }
 
@@ -86,7 +86,7 @@ class JavaCrolangSettings {
      * @param delta the delta time in milliseconds
      * @return this builder instance
      */
-    fun reconnectionAttemptsDeltaMs(delta: Long) = apply {
+    fun reconnectionAttemptsDeltaMs(delta: Int) = apply {
         this.reconnectionAttemptsDeltaMs = delta
     }
 

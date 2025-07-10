@@ -18,33 +18,33 @@
 @JsExport
 class CrolangSettingsJs {
     
-    private var p2pConnectionTimeoutMillis: Long = 30000
-    private var multipartP2PMessageTimeoutMillis: Long = 60000
+    private var p2pConnectionTimeoutMillis: Int = 30000
+    private var multipartP2PMessageTimeoutMillis: Int = 60000
     private var reconnection: Boolean = true
     private var maxReconnectionAttempts: Int? = null
-    private var reconnectionAttemptsDeltaMs: Long = 2000
+    private var reconnectionAttemptsDeltaMs: Int = 2000
     
     /**
      * Sets the timeout for P2P connection attempts in milliseconds.
      */
-    fun setP2pConnectionTimeoutMillis(timeout: Long): CrolangSettingsJs {
+    fun setP2pConnectionTimeoutMillis(timeout: Int): CrolangSettingsJs {
         this.p2pConnectionTimeoutMillis = timeout
         return this
     }
 
-    fun getP2pConnectionTimeoutMillis(): Long {
+    fun getP2pConnectionTimeoutMillis(): Int {
         return p2pConnectionTimeoutMillis
     }
     
     /**
      * Sets the timeout for multipart P2P messages in milliseconds.
      */
-    fun setMultipartP2PMessageTimeoutMillis(timeout: Long): CrolangSettingsJs {
+    fun setMultipartP2PMessageTimeoutMillis(timeout: Int): CrolangSettingsJs {
         this.multipartP2PMessageTimeoutMillis = timeout
         return this
     }
 
-    fun getMultipartP2PMessageTimeoutMillis(): Long {
+    fun getMultipartP2PMessageTimeoutMillis(): Int {
         return multipartP2PMessageTimeoutMillis
     }
     
@@ -75,12 +75,12 @@ class CrolangSettingsJs {
     /**
      * Sets the time in milliseconds between reconnection attempts.
      */
-    fun setReconnectionAttemptsDeltaMs(deltaMs: Long): CrolangSettingsJs {
+    fun setReconnectionAttemptsDeltaMs(deltaMs: Int): CrolangSettingsJs {
         this.reconnectionAttemptsDeltaMs = deltaMs
         return this
     }
 
-    fun getReconnectionAttemptsDeltaMs(): Long {
+    fun getReconnectionAttemptsDeltaMs(): Int {
         return reconnectionAttemptsDeltaMs
     }
 

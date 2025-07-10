@@ -24,7 +24,7 @@ import internal.dependencies.utils.CancelableTimer
  * This class uses the injected TimerProvider to create platform-specific timers while
  * keeping the core business logic platform-agnostic.
  */
-internal class TimeoutTimer(delayMs: Long, onTimesUp: () -> Unit) {
+internal class TimeoutTimer(delayMs: Int, onTimesUp: () -> Unit) {
 
     private val timer: CancelableTimer = SharedStore.dependencies!!.timerProvider.createTimer(delayMs, onTimesUp)
 

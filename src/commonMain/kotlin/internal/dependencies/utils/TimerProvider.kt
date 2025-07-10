@@ -31,7 +31,7 @@ abstract class TimerProvider {
      * @param onTimeout The callback function to execute when the timer expires
      * @return A CancelableTimer instance that can be used to cancel the timer
      */
-    abstract fun createTimer(delayMs: Long, onTimeout: () -> Unit): CancelableTimer
+    abstract fun createTimer(delayMs: Int, onTimeout: () -> Unit): CancelableTimer
 }
 
 /**
