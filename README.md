@@ -7,7 +7,7 @@
 ![Node.js](https://img.shields.io/badge/Node.js-16+-green?logo=node.js)
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/crolang-p2p/crolang-p2p-node)
-![GitHub Release Date](https://img.shields.io/github/release-date/crolang-p2p/crolang-p2p-node). 
+![GitHub Release Date](https://img.shields.io/github/release-date/crolang-p2p/crolang-p2p-node)  
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.crolang-p2p/crolang-p2p-node-jvm.svg)](https://central.sonatype.com/artifact/io.github.crolang-p2p/crolang-p2p-node-jvm)
 [![npm](https://img.shields.io/npm/v/crolang-p2p-node.svg)](https://www.npmjs.com/package/crolang-p2p-node)
 
