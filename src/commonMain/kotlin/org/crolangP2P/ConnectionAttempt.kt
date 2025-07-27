@@ -27,20 +27,21 @@ import internal.utils.SharedStore.localNodeId
 import internal.utils.SharedStore.logger
 import internal.utils.SharedStore.rtcConfiguration
 import internal.utils.SharedStore.socket
+import org.crolangP2P.errors.P2PConnectionFailedError
 
 /**
  * Returned by an asynchronous connection attempt to a remote Node.
  * Allows to check whether the connection attempt is concluded and to forcefully close the connection attempt.
  *
- * @see CoreCrolangP2PFacade.connectToSingleNodeAsync
- * @see CoreCrolangP2PFacade.connectToMultipleNodesSync
+ * @see CoreCrolangP2PFacade.connectToSingleNode
+ * @see CoreCrolangP2PFacade.connectToMultipleNodes
  */
 class ConnectionAttempt(
-    private val targets: Map<String, AsyncCrolangNodeCallbacks>,
-    private val onConnectionAttemptConcluded: (result: Map<String, Result<CrolangNode>>) -> Unit
+    private val targets: Map<String, OutgoingCrolangNodeCallbacks>,
+    private val onConnectionAttemptConcluded: (connected: Map<String, CrolangNode>, errors: Map<String, P2PConnectionFailedError>) -> Unit
 ) {
     private val connectionAttemptInitiators: MutableMap<String, InitiatorNode> = mutableMapOf()
-    private val failedConnectionPeers: MutableMap<String, P2PConnectionFailedReason> = mutableMapOf()
+    private val failedConnectionPeers: MutableMap<String, P2PConnectionFailedError> = mutableMapOf()
     private var isConcluded: Boolean = false
     private var missingNodesCountdown = targets.size
 
@@ -48,9 +49,9 @@ class ConnectionAttempt(
         if(socket == null || !socket!!.connected()){
             for(pair in targets){
                 logger.regularErr("tried to connect to ${pair.key} while not connected to broker")
-                failedConnectionPeers[pair.key] = P2PConnectionFailedReason.LOCAL_NODE_NOT_CONNECTED_TO_BROKER
+                failedConnectionPeers[pair.key] = P2PConnectionFailedError.LOCAL_NODE_NOT_CONNECTED_TO_BROKER
                 executeCallbackOnExecutor {
-                    pair.value.onConnectionFailed(pair.key, P2PConnectionFailedReason.LOCAL_NODE_NOT_CONNECTED_TO_BROKER.toConnectionToNodeFailedReasonException())
+                    pair.value.onConnectionFailed(pair.key, P2PConnectionFailedError.LOCAL_NODE_NOT_CONNECTED_TO_BROKER)
                 }
             }
             conclude(BrokerConnectionAttemptClosedReason.NOT_CONNECTED_TO_BROKER)
@@ -66,16 +67,16 @@ class ConnectionAttempt(
                 targets.forEach { pair ->
                     if(pair.key == localNodeId){
                         logger.regularErr("tried to connect to self")
-                        failedConnectionPeers[pair.key] = P2PConnectionFailedReason.TRIED_TO_CONNECT_TO_SELF
+                        failedConnectionPeers[pair.key] = P2PConnectionFailedError.TRIED_TO_CONNECT_TO_SELF
                         executeCallbackOnExecutor {
-                            pair.value.onConnectionFailed(pair.key, P2PConnectionFailedReason.TRIED_TO_CONNECT_TO_SELF.toConnectionToNodeFailedReasonException())
+                            pair.value.onConnectionFailed(pair.key, P2PConnectionFailedError.TRIED_TO_CONNECT_TO_SELF)
                         }
                         idsToCountdown.add(pair.key)
                     } else if(brokerPeersContainer.initiatorNodes.containsKey(pair.key) || brokerPeersContainer.responderNodes.containsKey(pair.key)){
                         logger.regularErr("tried to connect to already contacted node ${pair.key}")
-                        failedConnectionPeers[pair.key] = P2PConnectionFailedReason.ALREADY_CONNECTED_TO_REMOTE_NODE
+                        failedConnectionPeers[pair.key] = P2PConnectionFailedError.ALREADY_CONNECTED_TO_REMOTE_NODE
                         executeCallbackOnExecutor {
-                            pair.value.onConnectionFailed(pair.key, P2PConnectionFailedReason.ALREADY_CONNECTED_TO_REMOTE_NODE.toConnectionToNodeFailedReasonException())
+                            pair.value.onConnectionFailed(pair.key, P2PConnectionFailedError.ALREADY_CONNECTED_TO_REMOTE_NODE)
                         }
                         idsToCountdown.add(pair.key)
                     } else {
@@ -84,7 +85,7 @@ class ConnectionAttempt(
                             rtcConfiguration!!,
                             remoteNodeId = pair.key,
                             sessionId,
-                            asyncCrolangNodeCallbacks = pair.value,
+                            outgoingCrolangNodeCallbacks = pair.value,
                             connectionAttemptInitiators,
                             failedConnectionPeers
                         ){
@@ -135,38 +136,44 @@ class ConnectionAttempt(
         executeCallbackOnExecutor {
             when(reason){
                 BrokerConnectionAttemptClosedReason.ALL_NODES_HANDLED -> {
-                    onConnectionAttemptConcluded(targets.mapValues { (key, _) ->
+                    val connected: MutableMap<String, CrolangNode> = mutableMapOf()
+                    val errors: MutableMap<String, P2PConnectionFailedError> = mutableMapOf()
+                    targets.forEach { (key, _) ->
                         if(failedConnectionPeers.containsKey(key)){
-                            Result.failure(failedConnectionPeers[key]!!.toConnectionToNodeFailedReasonException())
+                            errors[key] = failedConnectionPeers[key]!!
                         } else if (brokerPeersContainer.initiatorNodes.containsKey(key)) {
-                            Result.success(brokerPeersContainer.initiatorNodes[key]!!.crolangNode)
+                            connected[key] = brokerPeersContainer.initiatorNodes[key]!!.crolangNode
                         } else {
-                            Result.failure(P2PConnectionFailedReason.CONNECTION_NEGOTIATION_ERROR.toConnectionToNodeFailedReasonException())
+                            errors[key] = P2PConnectionFailedError.CONNECTION_NEGOTIATION_ERROR
                         }
-                    })
+                    }
+                    onConnectionAttemptConcluded(connected, errors)
                 }
                 BrokerConnectionAttemptClosedReason.NOT_CONNECTED_TO_BROKER -> {
-                    onConnectionAttemptConcluded(targets.mapValues {
-                        Result.failure(P2PConnectionFailedReason.LOCAL_NODE_NOT_CONNECTED_TO_BROKER.toConnectionToNodeFailedReasonException())
+                    onConnectionAttemptConcluded(mapOf(), targets.mapValues {
+                        P2PConnectionFailedError.LOCAL_NODE_NOT_CONNECTED_TO_BROKER
                     })
                 }
                 BrokerConnectionAttemptClosedReason.CLOSED_BY_USER -> {
-                    onConnectionAttemptConcluded(targets.mapValues { (key, _) ->
+                    val connected: MutableMap<String, CrolangNode> = mutableMapOf()
+                    val errors: MutableMap<String, P2PConnectionFailedError> = mutableMapOf()
+                    targets.forEach { (key, _) ->
                         if(failedConnectionPeers.containsKey(key)){
-                            Result.failure(failedConnectionPeers[key]!!.toConnectionToNodeFailedReasonException())
+                            errors[key] = failedConnectionPeers[key]!!
                         } else if (brokerPeersContainer.initiatorNodes.containsKey(key)) {
                             val initiatorNode = brokerPeersContainer.initiatorNodes[key]!!
                             if(initiatorNode.state == NodeState.CONNECTED){
-                                Result.success(brokerPeersContainer.initiatorNodes[key]!!.crolangNode)
+                                connected[key] = brokerPeersContainer.initiatorNodes[key]!!.crolangNode
                             } else {
                                 initiatorNode.connectionTimeoutTimer.cancel()
                                 initiatorNode.forceClose(NodeState.DISCONNECTED)
-                                Result.failure(P2PConnectionFailedReason.CONNECTION_ATTEMPT_CLOSED_BY_USER_FORCEFULLY.toConnectionToNodeFailedReasonException())
+                                errors[key] = P2PConnectionFailedError.CONNECTION_ATTEMPT_CLOSED_BY_USER_FORCEFULLY
                             }
                         } else {
-                            Result.failure(P2PConnectionFailedReason.CONNECTION_ATTEMPT_CLOSED_BY_USER_FORCEFULLY.toConnectionToNodeFailedReasonException())
+                            errors[key] = P2PConnectionFailedError.CONNECTION_ATTEMPT_CLOSED_BY_USER_FORCEFULLY
                         }
-                    })
+                    }
+                    onConnectionAttemptConcluded(connected, errors)
                 }
             }
         }

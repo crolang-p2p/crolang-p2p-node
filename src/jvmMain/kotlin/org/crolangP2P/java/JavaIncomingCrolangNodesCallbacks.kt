@@ -19,7 +19,7 @@ package org.crolangP2P.java
 import org.crolangP2P.IncomingCrolangNodesCallbacks
 import org.crolangP2P.ChannelMessageCallbacks
 import org.crolangP2P.CrolangNode
-import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
+import org.crolangP2P.errors.P2PConnectionFailedError
 
 /**
  * Java-friendly builder pattern for [IncomingCrolangNodesCallbacks].
@@ -39,7 +39,7 @@ class JavaIncomingCrolangNodesCallbacks {
     
     private var onConnectionAttempt: (String, String, String) -> Boolean = { _, _, _ -> true }
     private var onConnectionSuccess: (CrolangNode) -> Unit = {}
-    private var onConnectionFailed: (String, ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> }
+    private var onConnectionFailed: (String, P2PConnectionFailedError) -> Unit = { _, _ -> }
     private var onDisconnection: (String) -> Unit = {}
     private var onNewMsg: ChannelMessageCallbacks = emptyMap()
 
@@ -69,7 +69,7 @@ class JavaIncomingCrolangNodesCallbacks {
      * @param callback BiConsumer receiving the node ID and failure reason
      * @return this builder instance
      */
-    fun onConnectionFailed(callback: java.util.function.BiConsumer<String, ConnectionToNodeFailedReasonException>) = apply {
+    fun onConnectionFailed(callback: java.util.function.BiConsumer<String, P2PConnectionFailedError>) = apply {
         this.onConnectionFailed = { id, reason -> callback.accept(id, reason) }
     }
 

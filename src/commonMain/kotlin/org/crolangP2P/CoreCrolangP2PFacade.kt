@@ -16,37 +16,26 @@
 
 package org.crolangP2P
 
-import internal.broker.BrokerSocketCreator.createSocket
-import internal.broker.OnConnectionToBrokerSettings
 import internal.dependencies.DependenciesInjection
-import internal.events.data.AreNodesConnectedToBrokerMsg
-import internal.events.data.AreNodesConnectedToBrokerMsgResponse
-import internal.events.data.ParsableSocketDirectMsg
-import internal.events.data.SocketDirectMsg
-import internal.events.data.abstractions.SocketMsgType.Companion.ARE_NODES_CONNECTED_TO_BROKER
-import internal.events.data.abstractions.SocketMsgType.Companion.SOCKET_MSG_EXCHANGE
-import internal.events.data.abstractions.SocketResponses
-import internal.node.NodeState
-import internal.utils.AwaitAsyncEventGuard
-import internal.utils.BrokerMsgExtractor.extractMessageFromPayload
-import internal.utils.CrolangLogger
+import internal.dependencies.event_loop.EventLoop
+import internal.events.OnAllowIncomingConnectionsRequested
+import internal.events.OnAreIncomingConnectionsAllowedRequested
+import internal.events.OnAreRemoteNodesConnectedToBrokerRequested
+import internal.events.OnConnectToBrokerRequested
+import internal.events.OnDisconnectFromBrokerRequested
+import internal.events.OnGetAllConnectedNodesRequested
+import internal.events.OnGetConnectedNodeRequested
+import internal.events.OnIsLocalNodeConnectedToBrokerRequested
+import internal.events.OnSendSocketMsgRequested
+import internal.events.OnStopIncomingConnectionsRequested
 import internal.utils.SharedStore
-import internal.utils.SharedStore.brokerLifecycleCallbacks
-import internal.utils.SharedStore.disconnectAllInitiatorNodesNotConnected
-import internal.utils.SharedStore.disconnectAllResponderNodesNotConnected
-import internal.utils.SharedStore.incomingCrolangNodesCallbacks
-import internal.utils.SharedStore.localNodeId
 import internal.utils.SharedStore.logger
-import internal.utils.SharedStore.onConnectionToBrokerSettings
-import internal.utils.SharedStore.onNewSocketMsgCallbacks
-import internal.utils.SharedStore.parser
-import internal.utils.SharedStore.settings
-import internal.utils.SharedStore.socket
-import org.crolangP2P.exceptions.AllowIncomingConnectionsException
-import org.crolangP2P.exceptions.ConnectToBrokerException
-import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
-import org.crolangP2P.exceptions.RemoteNodesConnectionStatusCheckException
-import org.crolangP2P.exceptions.SendSocketMsgException
+import org.crolangP2P.errors.AllowIncomingConnectionsError
+import org.crolangP2P.errors.ConnectionToBrokerError
+import org.crolangP2P.errors.DisconnectionFromBrokerError
+import org.crolangP2P.errors.P2PConnectionFailedError
+import org.crolangP2P.errors.RemoteNodesConnectionStatusCheckError
+import org.crolangP2P.errors.SendSocketMsgError
 
 /**
  * Core facade for the CroLang P2P networking library.
@@ -59,84 +48,61 @@ import org.crolangP2P.exceptions.SendSocketMsgException
  */
 open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
 
+    private val eventLoop: EventLoop
+
     init {
         SharedStore.dependencies = dependencies
+        eventLoop = dependencies.eventLoop
     }
 
     /**
      * Checks if the local node is connected to the Crolang Broker.
-     * This method returns true if the socket is present and connected, false otherwise.
      *
-     * @return true if the local node is connected to the Broker, false otherwise.
+     * @param onResult callback that returns true if the local node is connected to the Broker, false otherwise.
      */
-    fun isLocalNodeConnectedToBroker(): Boolean {
-        return socket != null && socket!!.connected()
+    fun isLocalNodeConnectedToBroker(onResult: (isConnected: Boolean) -> Unit) {
+        eventLoop.postEvent(OnIsLocalNodeConnectedToBrokerRequested(onResult))
     }
 
     /**
      * Checks if the provided remote node is connected to the Crolang Broker.
-     * This method returns true if the node is connected, false otherwise. If the local Node is not connected to the Broker,
-     * an exception is thrown.
      *
      * @param id The ID of the remote node to check.
-     * @return A Result containing true if the node is connected, false otherwise.
+     * @param onResult callback returning a flag containing true if the node is connected, false otherwise.
+     * @param onError callback handing errors while performing the operation; empty by default.
      */
-    suspend fun isRemoteNodeConnectedToBroker(id: String): Result<Boolean> {
-        return areRemoteNodesConnectedToBroker(setOf(id)).fold(
-            onSuccess = {
+    fun isRemoteNodeConnectedToBroker(
+        id: String,
+        onResult: (isRemoteNodeConnected: Boolean) -> Unit,
+        onError: (err: RemoteNodesConnectionStatusCheckError) -> Unit = { _ -> }
+    ) {
+        return areRemoteNodesConnectedToBroker(
+            setOf(id),
+            onResult = {
                 val result = it[id]
                 if (result != null) {
-                    Result.success(result)
+                    onResult(result)
                 } else {
-                    Result.failure(RemoteNodesConnectionStatusCheckException.UnknownError)
+                    onError(RemoteNodesConnectionStatusCheckError.UNKNOWN_ERROR)
                 }
             },
-            onFailure = { Result.failure(it) }
+            onError = { onError(it) }
         )
     }
 
     /**
      * Checks if the provided set of remote nodes are connected to the Crolang Broker.
-     * This method returns a map where the key is the node ID and the value is true if the Node is connected,
-     * false otherwise. If the local Node is not connected to the Broker, an exception is thrown.
      *
      * @param ids The set of remote node IDs to check.
-     * @return A Result containing a map of node IDs and their connection status.
+     * @param onResult callback returning the map of node IDs and their connection status.
+     * @param onError callback handing errors while performing the operation; empty by default.
      */
-    suspend fun areRemoteNodesConnectedToBroker(ids: Set<String>): Result<Map<String, Boolean>> {
-        if(!isLocalNodeConnectedToBroker()){
-            return Result.failure(RemoteNodesConnectionStatusCheckException.NotConnectedToBroker)
-        } else if(ids.isEmpty()){
-            return Result.success(emptyMap())
-        }
-        var result: Map<String, Boolean>? = null
-        val guard = AwaitAsyncEventGuard(SharedStore.dependencies!!.uuidGenerator.generateRandomUUID())
-        guard.startNewCountdown()
-        socket!!.emit(
-            ARE_NODES_CONNECTED_TO_BROKER,
-            parser.toJson(AreNodesConnectedToBrokerMsg(ids))
-        ) { args ->
-            val extracted = extractMessageFromPayload(args)
-            if (extracted == null) {
-                guard.stepDown()
-                return@emit
-            }
-            val res = parser.fromJson<AreNodesConnectedToBrokerMsgResponse>(extracted)
-            if(res != null){
-                if (res.results != null && res.results!!.all { it.id != null && it.connected != null }) {
-                    result = res.results!!.associate { it.id!! to it.connected!! }
-                }
-                guard.stepDown()
-            } else {
-                guard.stepDown()
-            }
-        }
-        guard.await()
-        return if(result == null){
-            Result.failure(RemoteNodesConnectionStatusCheckException.UnknownError)
-        } else {
-            Result.success(result!!)
-        }
+    fun areRemoteNodesConnectedToBroker(
+        ids: Set<String>,
+        onResult: (resultMap: Map<String, Boolean>) -> Unit,
+        onError: (err: RemoteNodesConnectionStatusCheckError) -> Unit = { _ -> }
+    ) {
+        eventLoop.postEvent(OnAreRemoteNodesConnectedToBrokerRequested(ids, onResult, onError))
     }
 
     /**
@@ -145,49 +111,18 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      * @param id The ID of the remote node to send the message to.
      * @param channel The channel on which to send the message.
      * @param msg The message to send (optional). If not provided, an empty string will be sent.
-     * @return A Result indicating success or failure. On failure, see [SendSocketMsgException].
-     *
-     * @see SendSocketMsgException
+     * @param onMsgSent Callback invoked when the WebSocket message is successfully sent to the Broker that will relay it to the target Node; empty by default.
+     * @param onError Callback invoked when the WebSocket message could not be delivered to the Broker and, consequently, to the target Node; empty by default.
+     * @see SendSocketMsgError
      */
-    suspend fun sendSocketMsg(id: String, channel: String, msg: String?): Result<Unit>{
-        if(!isLocalNodeConnectedToBroker()){
-            return Result.failure(SendSocketMsgException.NotConnectedToBroker)
-        } else if (channel.isEmpty()){
-            return Result.failure(SendSocketMsgException.EmptyChannel)
-        } else if(id.isEmpty()){
-            return Result.failure(SendSocketMsgException.EmptyId)
-        } else if(id === localNodeId){
-            return Result.failure(SendSocketMsgException.TriedToSendMsgToSelf)
-        }
-
-        var err: String? = null
-        val guard = AwaitAsyncEventGuard(SharedStore.dependencies!!.uuidGenerator.generateRandomUUID())
-        guard.startNewCountdown()
-        socket!!.emit(
-            SOCKET_MSG_EXCHANGE,
-            parser.toJson(ParsableSocketDirectMsg.fromChecked(SocketDirectMsg(localNodeId, id, channel, msg ?: "")))
-        ) { args ->
-            if (args.size != 1 || args[0] !is String) {
-                err = SocketResponses.ERROR
-                guard.stepDown()
-                return@emit
-            }
-            val response = args[0] as String
-            if (SocketResponses.ALL.contains(response)) {
-                if (!SocketResponses.isOk(response)) {
-                    err = response
-                }
-            } else {
-                err = SocketResponses.ERROR
-            }
-            guard.stepDown()
-        }
-        guard.await()
-        return if(err == null){
-            Result.success(Unit)
-        } else {
-            Result.failure(SendSocketMsgException.fromMessage(err!!))
-        }
+    fun sendSocketMsg(
+        id: String,
+        channel: String,
+        msg: String?,
+        onMsgSent: () -> Unit = {},
+        onError: (err: SendSocketMsgError) -> Unit = {}
+    ) {
+        eventLoop.postEvent(OnSendSocketMsgRequested(id, channel, msg, onMsgSent, onError))
     }
 
     /**
@@ -196,63 +131,28 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      *
      * @param brokerAddr The address of the Broker to connect to.
      * @param nodeId The ID of the local node.
-     * @return A Result indicating success or failure of the connection attempt.
-     *
-     * @see ConnectToBrokerException
-     */
-    suspend fun connectToBroker(
-        brokerAddr: String,
-        nodeId: String
-    ): Result<Unit> {
-        return connectToBroker(brokerAddr, nodeId, "", emptyMap(), BrokerConnectionAdditionalParameters())
-    }
-
-    /**
-     * Connects to the Crolang Broker using the provided broker address and Node ID.
-     * This method initiates a connection attempt to the Broker and handles the connection process.
-     *
-     * @param brokerAddr The address of the Broker to connect to.
-     * @param nodeId The ID of the local node.
+     * @param onSuccess Callback invoked when the connection to the Broker is successfully established.
+     * @param onError Callback invoked when an error occurs while connecting to the Broker; empty by default.
      * @param onConnectionAttemptData Optional data to be passed, used for authentication to the Broker.
      * @param onNewSocketMsg Optional Map of callbacks for handling direct messages received via the Broker's WebSocket relay.
      * @param additionalParameters Optional additional parameters for the connection, including logging options, settings and lifecycle callbacks.
-     * @return A Result indicating success or failure of the connection attempt.
      *
-     * @see ConnectToBrokerException
+     * @see ConnectionToBrokerError
      */
-    suspend fun connectToBroker(
+    fun connectToBroker(
         brokerAddr: String,
         nodeId: String,
+        onSuccess: () -> Unit,
+        onError: (err: ConnectionToBrokerError) -> Unit = { _ -> },
         onConnectionAttemptData: String = "",
         onNewSocketMsg: Map<String, (from: String, msg: String) -> Unit> = emptyMap(),
         additionalParameters: BrokerConnectionAdditionalParameters = BrokerConnectionAdditionalParameters()
-    ): Result<Unit> {
-        if(socket != null){
-            logger.regularErr("trying to connect to Broker while already connected")
-            return Result.failure(ConnectToBrokerException.LocalClientAlreadyConnectedToBroker)
-        }
-        onNewSocketMsgCallbacks = onNewSocketMsg
-        brokerLifecycleCallbacks = additionalParameters.lifecycleCallbacks
-        logger = CrolangLogger(additionalParameters.logging)
-        settings = additionalParameters.settings
-        logger.regularInfo("initiating Broker connection attempt")
-        localNodeId = nodeId
-        onConnectionToBrokerSettings = OnConnectionToBrokerSettings(brokerAddr, onConnectionAttemptData)
-        val socket = createSocket()
-        SharedStore.socket = socket
-        SharedStore.brokerConnectionHelper.connectionToBrokerGuard.startNewCountdown()
-        socket.connect()
-        SharedStore.brokerConnectionHelper.connectionToBrokerGuard.await()
-        val connectionToBrokerError = SharedStore.brokerConnectionHelper.connectionToBrokerErrorReason
-        if(connectionToBrokerError != null){
-            logger.regularErr("failed to connect to Broker")
-            socket.disconnect()
-            onConnectionToBrokerSettings = null
-            SharedStore.flush()
-            return Result.failure(connectionToBrokerError.toConnectToBrokerException())
-        } else {
-            return Result.success(Unit)
-        }
+    ) {
+        eventLoop.postEvent(
+            OnConnectToBrokerRequested(
+                brokerAddr, nodeId, onSuccess, onError, onConnectionAttemptData, onNewSocketMsg, additionalParameters
+            )
+        )
     }
 
     /**
@@ -260,30 +160,26 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      *
      * Connected Nodes will NOT be disconnected; on the other hand, the connection process of Nodes that are still
      * attempting a connection will be forcefully stopped.
+     *
+     * @param onSuccess Callback invoked when the disconnection from the Broker is successfully completed
+     * @param onError Callback invoked when there was a problem performing the disconnection from the Broker
+     *
+     * @see DisconnectionFromBrokerError
      */
-    suspend fun disconnectFromBroker() {
-        logger.regularInfo("initiating disconnection from Broker")
-        if(socket != null){
-            logger.regularInfo("already disconnected from Broker")
-            return
-        }
-        SharedStore.brokerConnectionHelper.disconnectionFromBrokerGuard.startNewCountdown()
-        socket!!.disconnect()
-        disconnectAllInitiatorNodesNotConnected()
-        disconnectAllResponderNodesNotConnected()
-        SharedStore.brokerConnectionHelper.disconnectionFromBrokerGuard.await()
-        logger.regularInfo("disconnected from Broker")
-        SharedStore.flush()
+    fun disconnectFromBroker(
+        onSuccess: () -> Unit,
+        onError: (err: DisconnectionFromBrokerError) -> Unit
+    ) {
+        eventLoop.postEvent(OnDisconnectFromBrokerRequested(onSuccess, onError))
     }
 
     /**
      * Checks if incoming connections from other Nodes are allowed.
-     * This method returns true if incoming connections are allowed and the socket is connected.
      *
-     * @return true if incoming connections are allowed, false otherwise.
+     * @param onResult callback returning true if incoming connections are allowed, false otherwise.
      */
-    fun areIncomingConnectionsAllowed(): Boolean {
-        return SharedStore.areIncomingConnectionsAllowed()
+    fun areIncomingConnectionsAllowed(onResult: (areAllowed: Boolean) -> Unit) {
+        eventLoop.postEvent(OnAreIncomingConnectionsAllowedRequested(onResult))
     }
 
     /**
@@ -291,22 +187,17 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      *
      * @param callbacks The callbacks to be used for incoming connections.
      * @return A Result indicating success or failure.
+     * @param onSuccess Callback invoked when incoming connections are successfully allowed; empty by default.
+     * @param onError Callback invoked when an error occurs while allowing incoming connections; empty by default.
      * @see IncomingCrolangNodesCallbacks
-     * @see AllowIncomingConnectionsException
+     * @see AllowIncomingConnectionsError
      */
     fun allowIncomingConnections(
-        callbacks: IncomingCrolangNodesCallbacks = IncomingCrolangNodesCallbacks()
-    ): Result<Unit> {
-        if (socket == null || !socket!!.connected()) {
-            logger.regularErr("cannot allow incoming connections: not connected to the Crolang Broker")
-            return Result.failure(AllowIncomingConnectionsException.NotConnectedToBroker)
-        } else if (incomingCrolangNodesCallbacks != null) {
-            logger.regularErr("cannot allow incoming connections: incoming connections already allowed")
-            return Result.failure(AllowIncomingConnectionsException.IncomingConnectionsAlreadyAllowed)
-        }
-        incomingCrolangNodesCallbacks = callbacks
-        logger.regularInfo("incoming connections are now allowed")
-        return Result.success(Unit)
+        callbacks: IncomingCrolangNodesCallbacks = IncomingCrolangNodesCallbacks(),
+        onSuccess: () -> Unit = {},
+        onError: (err: AllowIncomingConnectionsError) -> Unit = { _ -> }
+    ) {
+        eventLoop.postEvent(OnAllowIncomingConnectionsRequested(callbacks, onSuccess, onError))
     }
 
     /**
@@ -314,47 +205,26 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      *
      * Stopping incoming connections will not disconnect any currently connected Nodes; on the other hand,
      * any connection attempt from other Nodes will be refused.
+     *
+     * @param onStopped Callback invoked when incoming connections are successfully stopped.
      */
-    fun stopIncomingConnections(){
-        if(socket == null){
-            logger.regularErr("cannot stop incoming connections: not connected to the Crolang Broker")
-        } else if(incomingCrolangNodesCallbacks == null){
-            logger.regularErr("cannot stop incoming connections: incoming connections already stopped")
-        }
-        incomingCrolangNodesCallbacks = null
-        disconnectAllResponderNodesNotConnected()
-        logger.regularInfo("incoming connections are now stopped")
+    fun stopIncomingConnections(onStopped: () -> Unit){
+        eventLoop.postEvent(OnStopIncomingConnectionsRequested(onStopped))
     }
 
     /**
-     * Returns a map of all connected nodes, where the key is the node ID and the value is the CrolangNode.
-     * @return A map of all connected nodes.
+     * @param onResult A callback returning a map of all connected nodes, where the key is the node ID and the value is the CrolangNode.
      */
-    fun getAllConnectedNodes(): Map<String, CrolangNode> {
-        val initiators = SharedStore.brokerPeersContainer.responderNodes.values
-            .filter { it.state == NodeState.CONNECTED }
-            .map { it.crolangNode }
-        val responders = SharedStore.brokerPeersContainer.initiatorNodes.values
-            .filter { it.state == NodeState.CONNECTED }
-            .map { it.crolangNode }
-        return (initiators + responders).associateBy { it.id }
+    fun getAllConnectedNodes(onResult: (connectedNodes: Map<String, CrolangNode>) -> Unit) {
+        eventLoop.postEvent(OnGetAllConnectedNodesRequested(onResult))
     }
 
     /**
-     * Returns the connected node with the given id, if it exists.
      * @param id The id of the node to retrieve.
-     * @return The connected node if found, or null if not found.
+     * @param onResult Callback that returns the connected node if found, null otherwise.
      */
-    fun getConnectedNode(id: String): CrolangNode? {
-        val initiator = SharedStore.brokerPeersContainer.responderNodes[id]
-        if(initiator != null && initiator.state == NodeState.CONNECTED){
-            return initiator.crolangNode
-        }
-        val responder = SharedStore.brokerPeersContainer.initiatorNodes[id]
-        if(responder != null && responder.state == NodeState.CONNECTED){
-            return responder.crolangNode
-        }
-        return null
+    fun getConnectedNode(id: String, onResult: (CrolangNode?) -> Unit) {
+        eventLoop.postEvent(OnGetConnectedNodeRequested(id, onResult))
     }
 
     /**
@@ -363,20 +233,18 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      * This method initiates a connection attempt to the specified nodes and returns a [ConnectionAttempt] object
      * that can be used to manage the connection process.
      *
-     * If you want to perform the connection synchronously, use [connectToMultipleNodesSync] instead.
-     *
-     * @param targets A map of node IDs and their corresponding [AsyncCrolangNodeCallbacks].
+     * @param targets A map of node IDs and their corresponding [OutgoingCrolangNodeCallbacks].
      * @param onConnectionAttemptConcluded A callback function that is called when the connection attempt is concluded;
-     * the callback takes a map of node IDs and their connection results (the connected [CrolangNode] or
-     * [ConnectionToNodeFailedReasonException] if the connection attempt failed).
+     * the callback returns two maps: one with the successfully connected nodes and another with the errors encountered during the connection attempt.
      * @return A [ConnectionAttempt] object representing the connection attempt.
      *
-     * @see AsyncCrolangNodeCallbacks
+     * @see OutgoingCrolangNodeCallbacks
      * @see ConnectionAttempt
+     * @see P2PConnectionFailedError
      */
-    fun connectToMultipleNodesAsync(
-        targets: Map<String, AsyncCrolangNodeCallbacks>,
-        onConnectionAttemptConcluded: (result: Map<String, Result<CrolangNode>>) -> Unit = {}
+    fun connectToMultipleNodes(
+        targets: Map<String, OutgoingCrolangNodeCallbacks>,
+        onConnectionAttemptConcluded: (connected: Map<String, CrolangNode>, errors: Map<String, P2PConnectionFailedError>) -> Unit = { _, _ -> }
     ): ConnectionAttempt {
         logger.regularInfo("attempting to connect to nodes ${targets.keys}")
         return ConnectionAttempt(targets, onConnectionAttemptConcluded)
@@ -388,86 +256,20 @@ open class CoreCrolangP2PFacade(dependencies: DependenciesInjection) {
      * This method initiates a connection attempt to the specified node and returns a [ConnectionAttempt] object
      * that can be used to manage the connection process.
      *
-     * If you want to perform the connection synchronously, use [connectToSingleNodeSync] instead.
-     *
      * @param id The ID of the node to connect to.
-     * @param callbacks The [AsyncCrolangNodeCallbacks] to be used for the connection attempt, defaulting to empty callbacks.
+     * @param callbacks The [OutgoingCrolangNodeCallbacks] to be used for the connection attempt, defaulting to empty callbacks.
      * @return A [ConnectionAttempt] object representing the connection attempt.
      *
-     * @see AsyncCrolangNodeCallbacks
+     * @see OutgoingCrolangNodeCallbacks
      * @see ConnectionAttempt
      */
-    fun connectToSingleNodeAsync(
+    fun connectToSingleNode(
         id: String,
-        callbacks: AsyncCrolangNodeCallbacks = AsyncCrolangNodeCallbacks()
+        callbacks: OutgoingCrolangNodeCallbacks = OutgoingCrolangNodeCallbacks()
     ): ConnectionAttempt {
-        return connectToMultipleNodesAsync(
+        return connectToMultipleNodes(
             mapOf(id to callbacks)
-        ) { /* do nothing, already handled by connection success and failed handlers */ }
-    }
-
-    /**
-     * Connects to a single node synchronously.
-     *
-     * This method blocks until the connection attempt is concluded.
-     *
-     * If you want to perform the connection asynchronously, use [connectToSingleNodeAsync] instead.
-     *
-     * @param id The ID of the node to connect to.
-     * @param callbacks The [SyncCrolangNodeCallbacks] to be used for the connection attempt, defaulting to empty callbacks.
-     * @return A Result containing the connected [CrolangNode], or a [ConnectionToNodeFailedReasonException]
-     * if the connection attempt failed.
-     *
-     * @see SyncCrolangNodeCallbacks
-     * @see CrolangNode
-     * @see ConnectionToNodeFailedReasonException
-     */
-    suspend fun connectToSingleNodeSync(
-        id: String,
-        callbacks: SyncCrolangNodeCallbacks = SyncCrolangNodeCallbacks()
-    ): Result<CrolangNode> {
-        return connectToMultipleNodesSync(mapOf(id to callbacks))[id]!!
-    }
-
-    /**
-     * Connects to multiple nodes synchronously.
-     *
-     * This method blocks until the connection attempt is concluded.
-     *
-     * If you want to perform the connection asynchronously, use [connectToMultipleNodesAsync] instead.
-     *
-     * @param targets A map of node IDs and their corresponding [SyncCrolangNodeCallbacks].
-     * @return A map of node IDs and their connection results (the connected [CrolangNode] or
-     * a [ConnectionToNodeFailedReasonException] if the connection attempt failed).
-     *
-     * @see SyncCrolangNodeCallbacks
-     * @see CrolangNode
-     * @see ConnectionToNodeFailedReasonException
-     */
-    suspend fun connectToMultipleNodesSync(
-        targets: Map<String, SyncCrolangNodeCallbacks>
-    ): Map<String, Result<CrolangNode>> {
-        val nodesConnectionAsyncAwaitGuard = AwaitAsyncEventGuard(
-            "nodes connection async: ${targets.keys.joinToString(",")}"
-        )
-        nodesConnectionAsyncAwaitGuard.startNewCountdown()
-
-        lateinit var result: Map<String, Result<CrolangNode>>
-
-        connectToMultipleNodesAsync(
-            targets.mapValues { AsyncCrolangNodeCallbacks(
-                onConnectionSuccess = { /* do nothing, info already contained in result */ },
-                onConnectionFailed = { _, _ -> /* do nothing, info already contained in result  */ },
-                onDisconnection = it.value.onDisconnection,
-                onNewMsg = it.value.onNewMsg
-            ) }
-        ) {
-            result = it
-            nodesConnectionAsyncAwaitGuard.stepDown()
-        }
-
-        nodesConnectionAsyncAwaitGuard.await()
-        return result
+        ) { _, _ -> /* do nothing, already handled by connection success and failed handlers */ }
     }
 
 }

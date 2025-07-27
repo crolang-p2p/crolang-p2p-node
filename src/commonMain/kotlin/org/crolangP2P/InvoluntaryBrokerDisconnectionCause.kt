@@ -39,6 +39,10 @@ enum class InvoluntaryBrokerDisconnectionCause {
      */
     CLIENT_WITH_SAME_ID_ALREADY_CONNECTED,
     /**
+     * Indicates that the client version is not supported by the Broker.
+     */
+    UNSUPPORTED_ARCHITECTURE,
+    /**
      * Indicates that there was a connection error.
      */
     CONNECTION_ERROR,

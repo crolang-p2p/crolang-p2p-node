@@ -31,7 +31,7 @@ import internal.dependencies.webrtc.concrete.CrolangP2PRTCConfiguration
 import internal.dependencies.webrtc.concrete.CrolangP2PRTCDataChannelObserver
 import internal.utils.SharedStore
 import org.crolangP2P.IncomingCrolangNodesCallbacks
-import org.crolangP2P.P2PConnectionFailedReason
+import org.crolangP2P.errors.P2PConnectionFailedError
 
 /**
  * Represents a Responder node in a peer-to-peer WebRTC connection setup.
@@ -86,7 +86,7 @@ internal class ResponderNode(
                 incomingCrolangNodesCallbacks!!
                     .onConnectionFailed(
                         remoteNodeId,
-                        P2PConnectionFailedReason.CONNECTION_NEGOTIATION_ERROR.toConnectionToNodeFailedReasonException()
+                        P2PConnectionFailedError.CONNECTION_NEGOTIATION_ERROR
                     )
             }
         },

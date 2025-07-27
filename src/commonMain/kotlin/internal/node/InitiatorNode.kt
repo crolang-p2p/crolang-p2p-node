@@ -29,8 +29,8 @@ import internal.utils.SharedStore.brokerPeersContainer
 import internal.dependencies.webrtc.concrete.CrolangP2PRTCConfiguration
 import internal.dependencies.webrtc.concrete.CrolangP2PRTCDataChannelObserver
 import internal.utils.SharedStore
-import org.crolangP2P.AsyncCrolangNodeCallbacks
-import org.crolangP2P.P2PConnectionFailedReason
+import org.crolangP2P.OutgoingCrolangNodeCallbacks
+import org.crolangP2P.errors.P2PConnectionFailedError
 
 /**
  * Represents an Initiator node in a peer-to-peer WebRTC connection setup.
@@ -45,7 +45,7 @@ import org.crolangP2P.P2PConnectionFailedReason
  * - [concreteNodeEventParameters]: Parameters for customizing the concrete behaviour of the InitiatorNode,
  * providing mainly the events handlers
  *
- * @property asyncCrolangNodeCallbacks A set of callbacks for handling connection-related events such as
+ * @property outgoingCrolangNodeCallbacks A set of callbacks for handling connection-related events such as
  * successful connection, connection failure, and disconnection.
  * @property failedConnectionPeers A map storing peers that failed to establish a connection, with the reason for failure.
  * @property countdownMissingNodes A function that triggers the countdown for missing nodes in the sync connection process.
@@ -54,15 +54,15 @@ internal class InitiatorNode(
     rtcConfiguration: CrolangP2PRTCConfiguration,
     remoteNodeId: String,
     sessionId: String,
-    val asyncCrolangNodeCallbacks: AsyncCrolangNodeCallbacks,
+    val outgoingCrolangNodeCallbacks: OutgoingCrolangNodeCallbacks,
     private val connectionAttemptInitiators: MutableMap<String, InitiatorNode>,
-    val failedConnectionPeers: MutableMap<String, P2PConnectionFailedReason>,
+    val failedConnectionPeers: MutableMap<String, P2PConnectionFailedError>,
     val countdownMissingNodes: () -> Unit
 ) : AbstractNode(
     rtcConfiguration,
     remoteNodeId,
     sessionId,
-    asyncCrolangNodeCallbacks,
+    outgoingCrolangNodeCallbacks,
     newDataChannelRemotelyCreatedObserver = {
         /**
          * Since the Initiator node is the one creating the data channel, the observer for the data channel created
@@ -86,16 +86,16 @@ internal class InitiatorNode(
         nodesContainer = brokerPeersContainer.initiatorNodes,
         onNegotiationClosure = {
             if(failedConnectionPeers[remoteNodeId] == null){
-                failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.CONNECTION_NEGOTIATION_ERROR
+                failedConnectionPeers[remoteNodeId] = P2PConnectionFailedError.CONNECTION_NEGOTIATION_ERROR
             }
             connectionAttemptInitiators.remove(remoteNodeId)
-            executeCallbackOnExecutor { asyncCrolangNodeCallbacks.onConnectionFailed(
-                remoteNodeId, failedConnectionPeers[remoteNodeId]!!.toConnectionToNodeFailedReasonException()
+            executeCallbackOnExecutor { outgoingCrolangNodeCallbacks.onConnectionFailed(
+                remoteNodeId, failedConnectionPeers[remoteNodeId]!!
             ) }
             countdownMissingNodes()
         },
         onConnectedClosure = {
-            executeCallbackOnExecutor { asyncCrolangNodeCallbacks.onDisconnection(remoteNodeId) }
+            executeCallbackOnExecutor { outgoingCrolangNodeCallbacks.onDisconnection(remoteNodeId) }
         }
     )
 ) {

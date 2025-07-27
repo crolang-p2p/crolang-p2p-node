@@ -14,7 +14,23 @@
  * limitations under the License.
  */
 
-import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
+import org.crolangP2P.errors.P2PConnectionFailedError
+
+/*
+ * Copyright 2025 Alessandro Talmi
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /**
  * Callbacks for handling incoming P2P connection events.
@@ -30,7 +46,7 @@ class IncomingCrolangNodesCallbacksJs {
 
     private var onConnectionAttempt: (id: String, platform: String, version: String) -> Boolean = { _, _, _ -> true }
     private var onConnectionSuccess: (node: CrolangNodeJs) -> Unit = {}
-    private var onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit = { _, _ -> }
+    private var onConnectionFailed: (id: String, reason: P2PConnectionFailedError) -> Unit = { _, _ -> }
     private var onDisconnection: (id: String) -> Unit = {}
     private var onNewMsq: Map<String, (CrolangNodeJs, String) -> Unit> = emptyMap()
 
@@ -90,7 +106,7 @@ class IncomingCrolangNodesCallbacksJs {
      * @return This instance for method chaining
      */
     fun setOnConnectionFailed(
-        callback: (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit
+        callback: (id: String, reason: P2PConnectionFailedError) -> Unit
     ): IncomingCrolangNodesCallbacksJs {
         onConnectionFailed = callback
         return this
@@ -101,7 +117,7 @@ class IncomingCrolangNodesCallbacksJs {
      * 
      * @return The configured callback function
      */
-    fun getOnConnectionFailed(): (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit {
+    fun getOnConnectionFailed(): (id: String, reason: P2PConnectionFailedError) -> Unit {
         return onConnectionFailed
     }
 
@@ -186,7 +202,7 @@ object IncomingCrolangNodesCallbacksJsBuilder {
 class CrolangNodeCallbacksJs {
 
     private var onConnectionSuccess: (node: CrolangNodeJs) -> Unit = {}
-    private var onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit = { _, _ -> }
+    private var onConnectionFailed: (id: String, reason: P2PConnectionFailedError) -> Unit = { _, _ -> }
     private var onDisconnection: (id: String) -> Unit = {}
     private var onNewMsq: Map<String, (CrolangNodeJs, String) -> Unit> = emptyMap()
 
@@ -220,7 +236,7 @@ class CrolangNodeCallbacksJs {
      * @param callback Function that receives the node ID and failure reason
      * @return This instance for method chaining
      */
-    fun setOnConnectionFailed(callback: (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit): CrolangNodeCallbacksJs {
+    fun setOnConnectionFailed(callback: (id: String, reason: P2PConnectionFailedError) -> Unit): CrolangNodeCallbacksJs {
         onConnectionFailed = callback
         return this
     }
@@ -230,7 +246,7 @@ class CrolangNodeCallbacksJs {
      * 
      * @return The configured callback function
      */
-    fun getOnConnectionFailed(): (id: String, reason: ConnectionToNodeFailedReasonJs) -> Unit {
+    fun getOnConnectionFailed(): (id: String, reason: P2PConnectionFailedError) -> Unit {
         return onConnectionFailed
     }
 

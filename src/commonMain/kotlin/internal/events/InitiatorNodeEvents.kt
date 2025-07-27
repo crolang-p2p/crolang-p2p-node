@@ -41,7 +41,7 @@ import internal.dependencies.webrtc.concrete.CrolangP2PRTCDataChannelState
 import internal.dependencies.webrtc.concrete.CrolangP2PRTCPeerConnectionState
 import internal.dependencies.webrtc.concrete.CrolangP2PRTCSessionDescription
 import internal.utils.SharedStore
-import org.crolangP2P.P2PConnectionFailedReason
+import org.crolangP2P.errors.P2PConnectionFailedError
 
 /*
  * This class contains all the events that can be triggered by an initiator node.
@@ -96,7 +96,7 @@ internal abstract class InitiatorNodeAbstractEvent(protected val remoteNodeId: S
         } else {
             logger.debugErr("$msg $remoteNodeId: $failureErr")
         }
-        node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.CONNECTION_NEGOTIATION_ERROR
+        node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedError.CONNECTION_NEGOTIATION_ERROR
         node.forceClose(NodeState.NEGOTIATION_ERROR)
     }
 }
@@ -147,7 +147,7 @@ internal class OnConnectionAttemptTimeoutInitiatorNode(
     override fun onNodeFound(node: InitiatorNode) {
         // If the connection attempt was during the descriptions exchange or ICE candidates exchange
         if (node.state == NodeState.DESCRIPTIONS_EXCHANGE || node.state == NodeState.ICE_CANDIDATES_EXCHANGE) {
-            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.CONNECTION_TIMEOUT
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedError.CONNECTION_TIMEOUT
             logger.debugErr("connection attempt to remote ResponderNode $remoteNodeId timed out")
             node.forceClose(NodeState.TIMEOUT)
             node.countdownMissingNodes()
@@ -313,13 +313,13 @@ internal class OnConnectionAttemptNotDeliveredInitiatorNode(
     override fun onNodeFound(node: InitiatorNode) {
         logger.regularErr("could not deliver $CONNECTION_ATTEMPT to $remoteNodeId: $response")
         if(response == SocketResponses.NOT_CONNECTED) {
-            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.REMOTE_NODE_NOT_CONNECTED_TO_BROKER
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedError.REMOTE_NODE_NOT_CONNECTED_TO_BROKER
         } else if(response == SocketResponses.UNAUTHORIZED) {
-            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.UNAUTHORIZED_CONNECTION
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedError.UNAUTHORIZED_CONNECTION
         } else if(response == SocketResponses.DISABLED) {
-            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.UNAUTHORIZED_CONNECTION
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedError.UNAUTHORIZED_CONNECTION
         } else {
-            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.DISABLED
+            node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedError.DISABLED
         }
         node.forceClose(NodeState.NEGOTIATION_ERROR)
     }
@@ -341,7 +341,7 @@ internal class OnConnectionAttemptRefusedInitiatorNode(
     override fun onNodeFound(node: InitiatorNode) {
         logger.regularErr("$remoteNodeId refused connection attempt")
         node.setRemoteInfo(msg.platformFrom, msg.versionFrom)
-        node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.CONNECTION_REFUSED_BY_REMOTE_NODE
+        node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedError.CONNECTION_REFUSED_BY_REMOTE_NODE
         node.forceClose(NodeState.NEGOTIATION_ERROR)
     }
 }
@@ -363,7 +363,7 @@ internal class OnIncomingConnectionsNotAllowedInitiatorNode(
     override fun onNodeFound(node: InitiatorNode) {
         logger.regularErr("connections not allowed on remote Node $remoteNodeId")
         node.setRemoteInfo(msg.platformFrom, msg.versionFrom)
-        node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedReason.CONNECTIONS_NOT_ALLOWED_ON_REMOTE_NODE
+        node.failedConnectionPeers[remoteNodeId] = P2PConnectionFailedError.CONNECTIONS_NOT_ALLOWED_ON_REMOTE_NODE
         node.forceClose(NodeState.NEGOTIATION_ERROR)
     }
 }
@@ -585,7 +585,7 @@ internal class OnDataChannelStateChangeInitiatorNode(
             node.state = NodeState.CONNECTED
             node.connectionTimeoutTimer.cancel()
             executeCallbackOnExecutor {
-                node.asyncCrolangNodeCallbacks.onConnectionSuccess(node.crolangNode)
+                node.outgoingCrolangNodeCallbacks.onConnectionSuccess(node.crolangNode)
             }
             node.countdownMissingNodes()
         } else if(state == CrolangP2PRTCDataChannelState.CLOSED && node.isNegotiating(node.state)){

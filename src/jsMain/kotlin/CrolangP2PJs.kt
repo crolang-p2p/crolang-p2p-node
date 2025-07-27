@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-import ConnectionToNodeFailedReasonJs.Converter.fromConnectionToNodeFailedReasonException
 import internal.dependencies_injection.DependenciesInjectionProviderJs
 import internal.dependencies_injection.webrtc.setupWebRTCPolyfill
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.promise
-import org.crolangP2P.AsyncCrolangNodeCallbacks
 import org.crolangP2P.BrokerConnectionAdditionalParameters
 import org.crolangP2P.BrokerLifecycleCallbacks
-import org.crolangP2P.ConnectionAttempt
 import org.crolangP2P.CoreCrolangP2PFacade
 import org.crolangP2P.CrolangNode
 import org.crolangP2P.CrolangSettings
 import org.crolangP2P.IncomingCrolangNodesCallbacks
 import org.crolangP2P.LoggingOptions
+import org.crolangP2P.OutgoingCrolangNodeCallbacks
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * Main entry point for the CrolangP2P library in JavaScript/Node.js environments.
@@ -49,8 +50,11 @@ object CrolangP2PJs {
      * 
      * @return true if connected to the Broker, false otherwise
      */
-    fun isLocalNodeConnectedToBroker(): Boolean {
-        return coreFacade.isLocalNodeConnectedToBroker()
+    @OptIn(DelicateCoroutinesApi::class)
+    fun isLocalNodeConnectedToBroker(): kotlin.js.Promise<Boolean> {
+        return GlobalScope.promise { suspendCoroutine { continuation ->
+            coreFacade.isLocalNodeConnectedToBroker{ continuation.resume(it) }
+        } }
     }
 
     /**
@@ -119,16 +123,17 @@ object CrolangP2PJs {
                 enableDebugLogging = additionalParameters.getLogging().isDebugLoggingEnabled()
             )
         )
-        return GlobalScope.promise {
+        return GlobalScope.promise { suspendCoroutine { continuation ->
             coreFacade.connectToBroker(
                 brokerAddress,
                 nodeId,
                 onConnectionAttemptData = onConnectionAttemptData,
                 onNewSocketMsg = onNewSocketMsg.getListeners(),
-                additionalParameters = additionalParametersKotlin
-            ).getOrThrow()
-            CrolangP2PJs
-        }
+                additionalParameters = additionalParametersKotlin,
+                onSuccess = { continuation.resume(CrolangP2PJs) },
+                onError = { continuation.resumeWithException(Exception(it.toString())) }
+            )
+        } }
     }
 
     /**
@@ -141,10 +146,12 @@ object CrolangP2PJs {
      */
     @OptIn(DelicateCoroutinesApi::class)
     fun disconnectFromBroker(): kotlin.js.Promise<CrolangP2PJs> {
-        return GlobalScope.promise {
-            coreFacade.disconnectFromBroker()
-            CrolangP2PJs
-        }
+        return GlobalScope.promise { suspendCoroutine { continuation ->
+            coreFacade.disconnectFromBroker(
+                onSuccess = { continuation.resume(CrolangP2PJs) },
+                onError = { continuation.resumeWithException(Exception(it.toString())) }
+            )
+        } }
     }
 
     /**
@@ -152,8 +159,11 @@ object CrolangP2PJs {
      * 
      * @return true if incoming connections are allowed, false otherwise
      */
-    fun areIncomingConnectionsAllowed(): Boolean {
-        return coreFacade.areIncomingConnectionsAllowed()
+    @OptIn(DelicateCoroutinesApi::class)
+    fun areIncomingConnectionsAllowed(): kotlin.js.Promise<Boolean> {
+        return GlobalScope.promise { suspendCoroutine { continuation ->
+            coreFacade.areIncomingConnectionsAllowed{ continuation.resume(it) }
+        } }
     }
 
     /**
@@ -169,10 +179,15 @@ object CrolangP2PJs {
      */
     @OptIn(DelicateCoroutinesApi::class)
     fun sendSocketMsg(id: String, channel: String, msg: String): kotlin.js.Promise<CrolangP2PJs> {
-        return GlobalScope.promise {
-            coreFacade.sendSocketMsg(id, channel, msg) //TODO handle exceptions properly
-            CrolangP2PJs
-        }
+        return GlobalScope.promise { suspendCoroutine { continuation ->
+            coreFacade.sendSocketMsg(
+                id,
+                channel,
+                msg,
+                onMsgSent = { continuation.resume(CrolangP2PJs) },
+                onError = { continuation.resumeWithException(Exception(it.toString())) }
+            )
+        } }
     }
 
     /**
@@ -182,12 +197,19 @@ object CrolangP2PJs {
      * @return Promise resolving to array of connection status objects
      */
     @OptIn(DelicateCoroutinesApi::class)
-    fun areRemoteNodesConnectedToBroker(ids: Array<String>): kotlin.js.Promise<Array<NodeConnectionStatusJs>>{
+    fun areRemoteNodesConnectedToBroker(ids: Array<String>): kotlin.js.Promise<Array<NodeConnectionStatusJs>> {
         return GlobalScope.promise {
-            return@promise coreFacade.areRemoteNodesConnectedToBroker(ids.toSet())
-                .getOrElse { throw it }
-                .map { (nodeId, isConnected) -> NodeConnectionStatusJs(nodeId, isConnected) }
-                .toTypedArray()
+            suspendCoroutine { continuation ->
+                coreFacade.areRemoteNodesConnectedToBroker(
+                    ids.toSet(),
+                    onResult = { result ->
+                        continuation.resume(result.map { (nodeId, isConnected) -> NodeConnectionStatusJs(nodeId, isConnected) }.toTypedArray())
+                    },
+                    onError = { error ->
+                        continuation.resumeWithException(Exception(error.toString()))
+                    }
+                )
+            }
         }
     }
 
@@ -199,9 +221,13 @@ object CrolangP2PJs {
      */
     @OptIn(DelicateCoroutinesApi::class)
     fun isRemoteNodeConnectedToBroker(id: String): kotlin.js.Promise<Boolean> {
-        return GlobalScope.promise {
-            return@promise coreFacade.isRemoteNodeConnectedToBroker(id).getOrElse { throw it }
-        }
+        return GlobalScope.promise { suspendCoroutine { continuation ->
+            coreFacade.isRemoteNodeConnectedToBroker(
+                id,
+                onResult = { continuation.resume(it) },
+                onError = { continuation.resumeWithException(Exception(it.toString())) }
+            )
+        } }
     }
 
     /**
@@ -212,18 +238,23 @@ object CrolangP2PJs {
      * 
      * @param callbacks Configuration for handling incoming connection events
      */
-    fun allowIncomingConnections(callbacks: IncomingCrolangNodesCallbacksJs) {
-        coreFacade.allowIncomingConnections(IncomingCrolangNodesCallbacks(
-            onConnectionAttempt = callbacks.getOnConnectionAttempt(),
-            onConnectionSuccess = { callbacks.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
-            onConnectionFailed = { id, reason ->
-                callbacks.getOnConnectionFailed().invoke(id, fromConnectionToNodeFailedReasonException(reason))
-            },
-            onDisconnection = callbacks.getOnDisconnection(),
-            onNewMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
-                { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
-            }
-        ))
+    @OptIn(DelicateCoroutinesApi::class)
+    fun allowIncomingConnections(callbacks: IncomingCrolangNodesCallbacksJs): kotlin.js.Promise<CrolangP2PJs> {
+        return GlobalScope.promise { suspendCoroutine { continuation ->
+            coreFacade.allowIncomingConnections(
+                IncomingCrolangNodesCallbacks(
+                    onConnectionAttempt = callbacks.getOnConnectionAttempt(),
+                    onConnectionSuccess = { callbacks.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
+                    onConnectionFailed = { id, reason -> callbacks.getOnConnectionFailed().invoke(id, reason) },
+                    onDisconnection = callbacks.getOnDisconnection(),
+                    onNewMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
+                        { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
+                    }
+                ),
+                onSuccess = { continuation.resume(CrolangP2PJs) },
+                onError = { continuation.resumeWithException(Exception(it.toString())) }
+            )
+        } }
     }
 
     /**
@@ -232,8 +263,11 @@ object CrolangP2PJs {
      * After calling this method, other nodes will not be able to connect to this node.
      * Existing connections remain active.
      */
-    fun stopIncomingConnections() {
-        coreFacade.stopIncomingConnections()
+    @OptIn(DelicateCoroutinesApi::class)
+    fun stopIncomingConnections(): kotlin.js.Promise<dynamic> {
+        return GlobalScope.promise { suspendCoroutine { continuation ->
+            coreFacade.stopIncomingConnections { continuation.resume(Unit) }
+        } }
     }
 
     /**
@@ -241,8 +275,13 @@ object CrolangP2PJs {
      * 
      * @return Array of connected node instances
      */
-    fun getAllConnectedNodes(): Array<CrolangNodeJs> {
-        return coreFacade.getAllConnectedNodes().map { CrolangNodeJs(it.value) }.toTypedArray()
+    @OptIn(DelicateCoroutinesApi::class)
+    fun getAllConnectedNodes(): kotlin.js.Promise<Array<CrolangNodeJs>> {
+        return GlobalScope.promise { suspendCoroutine { continuation ->
+            coreFacade.getAllConnectedNodes{ connectedNodes ->
+                continuation.resume(connectedNodes.map { CrolangNodeJs(it.value) }.toTypedArray())
+            }
+        } }
     }
 
     /**
@@ -251,8 +290,13 @@ object CrolangP2PJs {
      * @param id The node identifier to look for
      * @return The connected node instance, or null if not found/connected
      */
-    fun getConnectedNode(id: String): CrolangNodeJs? {
-        return coreFacade.getConnectedNode(id)?.let { CrolangNodeJs(it) }
+    @OptIn(DelicateCoroutinesApi::class)
+    fun getConnectedNode(id: String): kotlin.js.Promise<CrolangNodeJs?> {
+        return GlobalScope.promise { suspendCoroutine { continuation ->
+            coreFacade.getConnectedNode(id){
+                continuation.resume(it?.let { CrolangNodeJs(it) })
+            }
+        } }
     }
 
     /**
@@ -266,10 +310,10 @@ object CrolangP2PJs {
      * @return Connection attempt object for monitoring and control
      */
     fun connectToSingleNode(id: String, callbacks: CrolangNodeCallbacksJs): ConnectionAttemptJs {
-        return ConnectionAttemptJs(coreFacade.connectToSingleNodeAsync(id, AsyncCrolangNodeCallbacks(
+        return ConnectionAttemptJs(coreFacade.connectToSingleNode(id, OutgoingCrolangNodeCallbacks(
             onConnectionSuccess = { callbacks.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
             onConnectionFailed = { onConnectionFailedId, reason -> callbacks.getOnConnectionFailed().invoke(
-                onConnectionFailedId, fromConnectionToNodeFailedReasonException(reason)
+                onConnectionFailedId, reason
             ) },
             onDisconnection = callbacks.getOnDisconnection(),
             onNewMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
@@ -288,12 +332,10 @@ object CrolangP2PJs {
      * @return Connection attempt object for monitoring and controlling all connections
      */
     fun connectToMultipleNodes(targets: CrolangNodeConnectionTargetsJs): ConnectionAttemptJs {
-        return ConnectionAttemptJs(coreFacade.connectToMultipleNodesAsync(
-            targets.getTargets().mapValues { target -> AsyncCrolangNodeCallbacks(
+        return ConnectionAttemptJs(coreFacade.connectToMultipleNodes(
+            targets.getTargets().mapValues { target -> OutgoingCrolangNodeCallbacks(
                 onConnectionSuccess = { target.value.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
-                onConnectionFailed = { id, reason ->
-                    target.value.getOnConnectionFailed().invoke(id, fromConnectionToNodeFailedReasonException(reason))
-                },
+                onConnectionFailed = { id, reason -> target.value.getOnConnectionFailed().invoke(id, reason) },
                 onDisconnection = target.value.getOnDisconnection(),
                 onNewMsg = target.value.getOnNewMsgCallbacks().mapValues { (_, callback) ->
                     { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }

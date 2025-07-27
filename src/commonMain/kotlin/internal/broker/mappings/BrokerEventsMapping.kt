@@ -26,6 +26,7 @@ import internal.events.data.RTCConfigurationMsg
 import internal.events.data.abstractions.SocketMsgType.Companion.AUTHENTICATED
 import internal.utils.SharedStore
 import internal.utils.SharedStore.reconnectionAttempts
+import org.crolangP2P.errors.ConnectionToBrokerError
 
 /**
  * This object is responsible for registering event listeners for the Broker socket.
@@ -36,8 +37,13 @@ internal object BrokerEventsMapping {
      * Registers event listeners for the Broker socket.
      *
      * @param socket The socket to register the event listeners on.
+     * @param onSuccess Callback to be invoked when the socket is successfully connected.
      */
-    fun registerEventListeners(socket: CrolangP2PSocket){
+    fun registerEventListeners(
+        socket: CrolangP2PSocket,
+        onSuccess: () -> Unit,
+        onError: (err: ConnectionToBrokerError) -> Unit
+    ){
 
         socket.on(SharedStore.dependencies!!.socketCreator.eventConnect()) {
             // AUTHENTICATED is the important one
@@ -47,12 +53,12 @@ internal object BrokerEventsMapping {
         BrokerMessagesMapping.registerSpecificMsgListener<ParsableRTCConfigurationMsg, RTCConfigurationMsg>(
             socket,
             AUTHENTICATED,
-            { msg -> SharedStore.dependencies!!.eventLoop.postEvent(OnValidAuthenticationMsg(msg)) },
-            { SharedStore.dependencies!!.eventLoop.postEvent(OnAuthenticationMsgParsingError()) }
+            { msg -> SharedStore.dependencies!!.eventLoop.postEvent(OnValidAuthenticationMsg(msg, onSuccess)) },
+            { SharedStore.dependencies!!.eventLoop.postEvent(OnAuthenticationMsgParsingError(onError)) }
         )
 
         socket.on(SharedStore.dependencies!!.socketCreator.eventConnectionError()) {
-            SharedStore.dependencies!!.eventLoop.postEvent(OnBrokerConnectError(it))
+            SharedStore.dependencies!!.eventLoop.postEvent(OnBrokerConnectError(it, onError))
         }
 
         socket.on(SharedStore.dependencies!!.socketCreator.eventDisconnect()) {

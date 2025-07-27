@@ -16,7 +16,7 @@
 
 package org.crolangP2P
 
-import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
+import org.crolangP2P.errors.P2PConnectionFailedError
 
 /**
  * Represents a communication channel.
@@ -41,18 +41,6 @@ abstract class BasicCrolangNodeCallbacks(
 )
 
 /**
- * User-defined callbacks for a CrolangNode that will be connected synchronously;
- * the callbacks are executed asynchronously on an executor service.
- *
- * @param onDisconnection Callback to be called when the node is disconnected. Optional, defaults to an empty function.
- * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel. Optional, defaults to an empty map.
- */
-class SyncCrolangNodeCallbacks(
-    onDisconnection: (id: String) -> Unit = {},
-    onNewMsg: ChannelMessageCallbacks = emptyMap()
-) : BasicCrolangNodeCallbacks(onDisconnection, onNewMsg)
-
-/**
  * User-defined callbacks for a CrolangNode that will be connected asynchronously;
  * the callbacks are executed asynchronously on an executor service.
  *
@@ -61,9 +49,9 @@ class SyncCrolangNodeCallbacks(
  * @param onDisconnection Callback to be called when the node is disconnected. Optional, defaults to an empty function.
  * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel. Optional, defaults to an empty map.
  */
-class AsyncCrolangNodeCallbacks(
+class OutgoingCrolangNodeCallbacks(
     val onConnectionSuccess: (node: CrolangNode) -> Unit = {},
-    val onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> },
+    val onConnectionFailed: (id: String, reason: P2PConnectionFailedError) -> Unit = { _, _ -> },
     onDisconnection: (id: String) -> Unit = {},
     onNewMsg: ChannelMessageCallbacks = emptyMap()
 ) : BasicCrolangNodeCallbacks(onDisconnection, onNewMsg)
@@ -81,7 +69,7 @@ class AsyncCrolangNodeCallbacks(
 class IncomingCrolangNodesCallbacks(
     val onConnectionAttempt: (id: String, platform: String, version: String) -> Boolean = { _, _, _ -> true },
     val onConnectionSuccess: (node: CrolangNode) -> Unit = {},
-    val onConnectionFailed: (id: String, reason: ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> },
+    val onConnectionFailed: (id: String, reason: P2PConnectionFailedError) -> Unit = { _, _ -> },
     onDisconnection: (id: String) -> Unit = {},
     onNewMsg: ChannelMessageCallbacks = emptyMap()
 ) : BasicCrolangNodeCallbacks(onDisconnection, onNewMsg)

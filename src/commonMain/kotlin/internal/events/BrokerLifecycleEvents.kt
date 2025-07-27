@@ -17,11 +17,13 @@
 package internal.events
 
 import internal.broker.BrokerSocketCreator.createSocket
-import internal.broker.ConnectionToBrokerErrorReason
+import org.crolangP2P.errors.ConnectionToBrokerError
 import internal.dependencies.event_loop.Event
 import internal.events.data.RTCConfigurationMsg
 import internal.utils.SharedStore
 import internal.utils.SharedStore.brokerLifecycleCallbacks
+import internal.utils.SharedStore.disconnectAllInitiatorNodesNotConnected
+import internal.utils.SharedStore.disconnectAllResponderNodesNotConnected
 import internal.utils.SharedStore.executeCallbackOnExecutor
 import internal.utils.SharedStore.flush
 import internal.utils.SharedStore.logger
@@ -29,6 +31,7 @@ import internal.utils.SharedStore.reconnectionAttempts
 import internal.utils.SharedStore.rtcConfiguration
 import internal.utils.SharedStore.settings
 import internal.utils.SharedStore.socket
+import internal.utils.SharedStore.userCallbackSuccessfulDisconnection
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -39,13 +42,16 @@ import org.crolangP2P.InvoluntaryBrokerDisconnectionCause
  * the Broker will always send an AUTHENTICATED message after a successful connection attempt.
  * The message contains the RTC configuration for the P2P connection.
  */
-internal class OnValidAuthenticationMsg(private val msg: RTCConfigurationMsg): Event {
+internal class OnValidAuthenticationMsg(
+    private val msg: RTCConfigurationMsg,
+    private val onUserRequestedConnectionSuccess: () -> Unit
+): Event {
 
     override fun process() {
         logger.debugInfo("Received RTC configuration")
         rtcConfiguration = msg.toConcreteRTCConfiguration()
-        if(SharedStore.brokerConnectionHelper.connectionToBrokerGuard.isCountdownInProgress()){
-            onVoluntaryConnectionToBrokerAttempt()
+        if(SharedStore.performingConnectionToBrokerRequestedByUser){
+            onVoluntaryConnectionToBrokerAttempt(onUserRequestedConnectionSuccess)
         } else {
             onSuccessfulAutomaticReconnectionAttempt()
         }
@@ -55,9 +61,12 @@ internal class OnValidAuthenticationMsg(private val msg: RTCConfigurationMsg): E
      * This method is called when the connection to the Broker is voluntary (by CrolangP2P.connectToBroker()).
      * It counts down the connection latch in order to progress with the sync connectToBroker method.
      */
-    private fun onVoluntaryConnectionToBrokerAttempt(){
+    private fun onVoluntaryConnectionToBrokerAttempt(onUserRequestedConnectionSuccess: () -> Unit){
         logger.regularInfo("connected to Broker")
-        SharedStore.brokerConnectionHelper.countDownConnectionLatch()
+        SharedStore.performingConnectionToBrokerRequestedByUser = false
+        executeCallbackOnExecutor {
+            onUserRequestedConnectionSuccess()
+        }
     }
 
     /**
@@ -78,7 +87,9 @@ internal class OnValidAuthenticationMsg(private val msg: RTCConfigurationMsg): E
  * This event is called when the AUTHENTICATED message from the Broker is not valid.
  * It can happen if the message is not in the expected format.
  */
-internal class OnAuthenticationMsgParsingError: Event {
+internal class OnAuthenticationMsgParsingError(
+    private val onUserRequestedConnectionError: (err: ConnectionToBrokerError) -> Unit
+): Event {
 
     override fun process() {
         logger.regularErr("error on parsing RTC configuration")
@@ -86,10 +97,11 @@ internal class OnAuthenticationMsgParsingError: Event {
             socket!!.close()
             socket = null
         }
-        if(SharedStore.brokerConnectionHelper.connectionToBrokerGuard.isCountdownInProgress()){
-            SharedStore.brokerConnectionHelper.countDownConnectionLatch(
-                ConnectionToBrokerErrorReason.ERROR_PARSING_RTC_CONFIGURATION
-            )
+        if(SharedStore.performingConnectionToBrokerRequestedByUser){
+            SharedStore.performingConnectionToBrokerRequestedByUser = false
+            executeCallbackOnExecutor {
+                onUserRequestedConnectionError(ConnectionToBrokerError.ERROR_PARSING_RTC_CONFIGURATION)
+            }
         }
     }
 
@@ -102,15 +114,18 @@ internal class OnAuthenticationMsgParsingError: Event {
  * involuntary (by the server or by the network).
  * The class also handles the reconnection attempts if enabled by settings.
  */
-internal class OnBrokerConnectError(private val connectErrorPayload: Array<Any>): Event {
+internal class OnBrokerConnectError(
+    private val connectErrorPayload: Array<Any>,
+    private val onUserRequestedConnectionError: (err: ConnectionToBrokerError) -> Unit
+): Event {
 
     override fun process() {
         val socket = socket!!
         SharedStore.socket = null
         val connectionToBrokerErrorReason = getConnectionToBrokerErrorReason()
         socket.close()
-        if(SharedStore.brokerConnectionHelper.connectionToBrokerGuard.isCountdownInProgress()){
-            onVoluntaryConnectionAttemptConnectionError(connectionToBrokerErrorReason)
+        if(SharedStore.performingConnectionToBrokerRequestedByUser){
+            onVoluntaryConnectionAttemptConnectionError(connectionToBrokerErrorReason, onUserRequestedConnectionError)
         } else if(settings.reconnection){
             onReconnectionAttemptConnectionError(connectionToBrokerErrorReason)
         }
@@ -124,45 +139,51 @@ internal class OnBrokerConnectError(private val connectErrorPayload: Array<Any>)
      * If the parsing fails, it assumes a socket error (network error or the server is down).
      * If the parsing succeeds, it checks for specific error messages and sets the appropriate error reason.
      */
-    private fun getConnectionToBrokerErrorReason(): ConnectionToBrokerErrorReason {
-        var connectionToBrokerErrorReason: ConnectionToBrokerErrorReason = ConnectionToBrokerErrorReason.UNKNOWN_ERROR
+    private fun getConnectionToBrokerErrorReason(): ConnectionToBrokerError {
+        var connectionToBrokerError: ConnectionToBrokerError = ConnectionToBrokerError.UNKNOWN_ERROR
         if(connectErrorPayload.iterator().hasNext()){
             val error = connectErrorPayload.iterator().next()
             try {
                 val brokerHandledMsg = Json.parseToJsonElement(error.toString()).jsonObject["message"]?.jsonPrimitive?.content
-                if (brokerHandledMsg == "authentication failed") {
-                    connectionToBrokerErrorReason = ConnectionToBrokerErrorReason.UNAUTHORIZED
-                } else if (brokerHandledMsg == "client already connected") {
-                    connectionToBrokerErrorReason = ConnectionToBrokerErrorReason.CLIENT_WITH_SAME_ID_ALREADY_CONNECTED
+                when (brokerHandledMsg) {
+                    "authentication failed" -> connectionToBrokerError = ConnectionToBrokerError.UNAUTHORIZED
+                    "client already connected" -> connectionToBrokerError = ConnectionToBrokerError.CLIENT_WITH_SAME_ID_ALREADY_CONNECTED
+                    "unsupported architecture" -> connectionToBrokerError = ConnectionToBrokerError.UNSUPPORTED_ARCHITECTURE
                 }
                 logger.regularErr("error while connecting to the Broker: $brokerHandledMsg")
             } catch (e: Exception) {
-                connectionToBrokerErrorReason = ConnectionToBrokerErrorReason.SOCKET_ERROR
+                connectionToBrokerError = ConnectionToBrokerError.SOCKET_ERROR
                 logger.regularErr("error while connecting to the Broker: ${e.message}")
             }
         } else {
             logger.regularErr("error while connecting to the Broker")
         }
-        return connectionToBrokerErrorReason
+        return connectionToBrokerError
     }
 
     /**
      * This method is called when the connection to the Broker is voluntary (by CrolangP2P.connectToBroker()).
      * It counts down the connection latch in order to progress with the sync connectToBroker method.
      */
-    private fun onVoluntaryConnectionAttemptConnectionError(connectionToBrokerErrorReason: ConnectionToBrokerErrorReason){
-        SharedStore.brokerConnectionHelper.countDownConnectionLatch(connectionToBrokerErrorReason)
+    private fun onVoluntaryConnectionAttemptConnectionError(
+        connectionToBrokerError: ConnectionToBrokerError,
+        onUserRequestedConnectionError: (err: ConnectionToBrokerError) -> Unit
+    ){
+        SharedStore.performingConnectionToBrokerRequestedByUser = false
+        executeCallbackOnExecutor {
+            onUserRequestedConnectionError(connectionToBrokerError)
+        }
     }
 
     /**
      * This method is called when the reconnection to the Broker is attempted.
      * When the error is not a socket error, reconnection is not possible.
      */
-    private fun onReconnectionAttemptConnectionError(connectionToBrokerErrorReason: ConnectionToBrokerErrorReason){
-        if(connectionToBrokerErrorReason == ConnectionToBrokerErrorReason.SOCKET_ERROR){
+    private fun onReconnectionAttemptConnectionError(connectionToBrokerError: ConnectionToBrokerError){
+        if(connectionToBrokerError == ConnectionToBrokerError.SOCKET_ERROR){
             onReconnectionAttemptSocketError()
         } else {
-            onReconnectionAttemptNotPossible(connectionToBrokerErrorReason)
+            onReconnectionAttemptNotPossible(connectionToBrokerError)
         }
     }
 
@@ -196,12 +217,12 @@ internal class OnBrokerConnectError(private val connectErrorPayload: Array<Any>)
      * This method is called when the reconnection to the Broker is attempted and the error is not a socket error.
      * It notifies the involuntary disconnection to the user by calling the user-defined callback.
      */
-    private fun onReconnectionAttemptNotPossible(connectionToBrokerErrorReason: ConnectionToBrokerErrorReason){
-        logger.regularInfo("reconnecting to the Broker failed by $connectionToBrokerErrorReason, not reconnecting")
+    private fun onReconnectionAttemptNotPossible(connectionToBrokerError: ConnectionToBrokerError){
+        logger.regularInfo("reconnecting to the Broker failed by $connectionToBrokerError, not reconnecting")
         flush()
         executeCallbackOnExecutor {
             brokerLifecycleCallbacks.onInvoluntaryDisconnection(
-                connectionToBrokerErrorReason.toInvoluntaryBrokerDisconnectionCause()
+                connectionToBrokerError.toInvoluntaryBrokerDisconnectionCause()
             )
         }
     }
@@ -217,7 +238,7 @@ internal class OnBrokerConnectError(private val connectErrorPayload: Array<Any>)
 internal class OnBrokerDisconnection: Event {
 
     override fun process() {
-        if(SharedStore.brokerConnectionHelper.disconnectionFromBrokerGuard.isCountdownInProgress()){
+        if(userCallbackSuccessfulDisconnection != null){
             onVoluntaryDisconnection()
         } else {
             onInvoluntaryDisconnection()
@@ -229,7 +250,13 @@ internal class OnBrokerDisconnection: Event {
      */
     private fun onVoluntaryDisconnection() {
         logger.regularInfo("disconnected from Broker voluntarily")
-        SharedStore.brokerConnectionHelper.disconnectionFromBrokerGuard.stepDown()
+        val onSuccess: () -> Unit = userCallbackSuccessfulDisconnection!!
+        userCallbackSuccessfulDisconnection = null
+        flush()
+        logger.regularInfo("disconnected from Broker")
+        disconnectAllInitiatorNodesNotConnected()
+        disconnectAllResponderNodesNotConnected()
+        onSuccess()
     }
 
     /**

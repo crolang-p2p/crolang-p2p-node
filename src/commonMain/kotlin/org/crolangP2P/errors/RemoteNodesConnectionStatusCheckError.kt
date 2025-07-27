@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package org.crolangP2P
-
-import org.crolangP2P.errors.P2PConnectionFailedError
-import java.util.Optional
+package org.crolangP2P.errors
 
 /**
- * Represents the result of a connection attempt to a Crolang node.
- *
- * @property node The connected Crolang node, if the connection was successful.
- * @property exception The reason for the connection failure, if applicable.
- *
- * @see CrolangP2PJvm.Java.connectToMultipleNodesSync
- * @see CrolangP2PJvm.Java.connectToMultipleNodes
+ * Enum representing errors related to remote nodes connection status checks.
  */
-class CrolangNodeConnectionResult(
-    val node: Optional<CrolangNode>,
-    val exception: Optional<P2PConnectionFailedError>
-)
+enum class RemoteNodesConnectionStatusCheckError {
+    /**
+     * The local Node is not connected to the Broker and therefore cannot check the connection status of remote Nodes.
+     */
+    NOT_CONNECTED_TO_BROKER,
+    /**
+     * An unknown error occurs while checking the connection status of remote Nodes.
+     */
+    UNKNOWN_ERROR;
+}

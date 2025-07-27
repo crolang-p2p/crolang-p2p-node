@@ -49,8 +49,7 @@ class CrolangNode private constructor(private val abstractNode: AbstractNode) {
      * @return true if the message was sent successfully, false otherwise.
      *
      * @see IncomingCrolangNodesCallbacks.onNewMsg
-     * @see SyncCrolangNodeCallbacks.onNewMsg
-     * @see AsyncCrolangNodeCallbacks.onNewMsg
+     * @see OutgoingCrolangNodeCallbacks.onNewMsg
      */
     fun send(channel: String, msg: String): Boolean {
         return abstractNode.sendP2PMsg(channel, msg)
@@ -64,8 +63,7 @@ class CrolangNode private constructor(private val abstractNode: AbstractNode) {
      * @return true if the message was sent successfully, false otherwise.
      *
      * @see IncomingCrolangNodesCallbacks.onNewMsg
-     * @see SyncCrolangNodeCallbacks.onNewMsg
-     * @see AsyncCrolangNodeCallbacks.onNewMsg
+     * @see OutgoingCrolangNodeCallbacks.onNewMsg
      */
     fun send(channel: String): Boolean {
         return abstractNode.sendP2PMsg(channel, "")
@@ -90,8 +88,7 @@ class CrolangNode private constructor(private val abstractNode: AbstractNode) {
      * Disconnects from the remote Node.
      *
      * @see IncomingCrolangNodesCallbacks.onDisconnection
-     * @see SyncCrolangNodeCallbacks.onDisconnection
-     * @see AsyncCrolangNodeCallbacks.onDisconnection
+     * @see OutgoingCrolangNodeCallbacks.onDisconnection
      */
     fun disconnect() {
         if(abstractNode.forceClose(NodeState.DISCONNECTED)){

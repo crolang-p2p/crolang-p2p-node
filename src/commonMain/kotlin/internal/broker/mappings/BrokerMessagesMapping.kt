@@ -126,7 +126,7 @@ internal object BrokerMessagesMapping {
                 fromJsonToCheckedMsg<U, C>(messageString)?.let {
                     eventStrategy(it)
                 } ?: run {
-                    println("Failed to parse message: $messageString")
+                    logger.debugErr("Failed to parse message: $messageString")
                     onMsgParsingErrorStrategy()
                 }
             } else {

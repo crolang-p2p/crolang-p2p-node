@@ -16,18 +16,10 @@
 
 package internal.utils
 
-import internal.broker.BrokerConnectionHelper
 import internal.broker.OnConnectionToBrokerSettings
 import internal.dependencies.DependenciesInjection
-import internal.dependencies.event_loop.EventLoop
 import internal.dependencies.socket.CrolangP2PSocket
-import internal.dependencies.socket.CrolangP2PSocketCreator
 import internal.dependencies.webrtc.concrete.CrolangP2PRTCConfiguration
-import internal.dependencies.webrtc.contracts.CrolangP2PPeerConnectionFactory
-import internal.dependencies.utils.SleepProvider
-import internal.dependencies.utils.TimerProvider
-import internal.dependencies.utils.TimestampProvider
-import internal.dependencies.utils.UUIDGenerator
 import internal.node.NodeState
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
@@ -47,6 +39,18 @@ internal object SharedStore {
      * This provides access to all platform-specific implementations.
      */
     var dependencies: DependenciesInjection? = null
+
+    /**
+     * Indicates whether the connection to the Broker is currently being established by a user request.
+     * Used to differenciate between automatic reconnections and user-initiated connections.
+     */
+    var performingConnectionToBrokerRequestedByUser: Boolean = false
+
+    /**
+     * Callback called when a disconnection triggered by the user is performed successfully.
+     * If null, this means that a user-triggered disconnection is not happening right now.
+     */
+    var userCallbackSuccessfulDisconnection: (() -> Unit)? = null
 
     /**
      * Map of callbacks for handling direct messages received via the Broker's WebSocket relay.
@@ -69,12 +73,6 @@ internal object SharedStore {
      * This property holds the initiator and responder nodes, making them available globally for the current Broker session.
      */
     val brokerPeersContainer = CrolangNodesContainer()
-
-    /**
-     * Helper for managing the connection and disconnection events to the Broker.
-     * This is used to track and control the connection status with the Broker.
-     */
-    val brokerConnectionHelper = BrokerConnectionHelper()
 
     /**
      * JSON parser used for serializing and deserializing objects.

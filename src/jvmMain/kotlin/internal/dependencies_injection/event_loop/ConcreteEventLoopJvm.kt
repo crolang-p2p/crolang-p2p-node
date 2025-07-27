@@ -22,6 +22,7 @@ import internal.dependencies.event_loop.EventLoop
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.onFailure
+import java.util.concurrent.Executors
 
 /**
  * A coroutine-based event loop that continuously processes incoming events.
@@ -35,7 +36,9 @@ internal class ConcreteEventLoopJvm : EventLoop() {
 
     private val eventChannel = Channel<Event>(capacity = Channel.UNLIMITED)
 
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(
+        Executors.newSingleThreadExecutor { r -> Thread(r).apply { isDaemon = false } }.asCoroutineDispatcher()
+    )
 
     init {
         scope.launch {

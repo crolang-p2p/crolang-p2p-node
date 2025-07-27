@@ -16,51 +16,28 @@
 
 package internal.dependencies_injection.executor
 
+import internal.dependencies.event_loop.Event
 import internal.dependencies.utils.ExecutorProvider
+import internal.dependencies_injection.event_loop.ConcreteEventLoopJs
 import internal.setImmediate
 
 /**
  * JavaScript/Node.js implementation of ExecutorProvider using Node.js event loop.
- * 
- * This implementation leverages the Node.js event loop through setImmediate() to execute
- * tasks asynchronously. In JavaScript's single-threaded environment, this provides
- * non-blocking execution by scheduling tasks for the next iteration of the event loop.
- * 
- * Unlike the JVM implementation which uses a thread pool, this implementation relies
- * on Node.js's event-driven architecture where all operations are scheduled on the
- * same thread but executed asynchronously.
  */
-internal class ConcreteExecutorProviderJs : ExecutorProvider {
+internal class ConcreteExecutorProviderJs(private val eventLoop: ConcreteEventLoopJs) : ExecutorProvider {
     
     /**
      * Executes a task asynchronously using the Node.js event loop.
      * 
-     * This method schedules the provided task to be executed on the next iteration
-     * of the Node.js event loop using setImmediate(). This provides non-blocking
-     * execution in JavaScript's single-threaded environment, equivalent to
-     * thread pool execution in the JVM.
-     * 
-     * The task execution is wrapped in exception handling to match JVM behavior
-     * where executor failures are silently handled.
-     * 
      * @param task The function to execute asynchronously
      */
     override fun executeAsync(task: () -> Unit) {
-        try {
-            // Schedule the task to be executed on the next tick of the Node.js event loop
-            // This is equivalent to the JVM's executor.submit() but adapted for JavaScript's
-            // single-threaded, event-driven model
-            setImmediate {
-                try {
-                    task()
-                } catch (e: Throwable) {
-                    // Silently handle exceptions to match JVM behavior
-                    // where the SharedStore catches exceptions and logs a generic error message
-                }
-            }
-        } catch (e: Exception) {
-            // Handle exceptions during task scheduling
-            // This matches the JVM behavior where exceptions in executor.submit() are caught
-        }
+        eventLoop.postEvent(JsUserRequestedAsyncEvent(task))
+    }
+}
+
+internal class JsUserRequestedAsyncEvent(private val task: () -> Unit): Event {
+    override fun process() {
+        task()
     }
 }

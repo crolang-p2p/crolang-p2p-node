@@ -17,11 +17,10 @@
 @file:JvmName("ConnectionCallbacksJavaKt")
 package org.crolangP2P.java
 
-import org.crolangP2P.SyncCrolangNodeCallbacks
-import org.crolangP2P.AsyncCrolangNodeCallbacks
+import org.crolangP2P.OutgoingCrolangNodeCallbacks
 import org.crolangP2P.ChannelMessageCallbacks
 import org.crolangP2P.CrolangNode
-import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
+import org.crolangP2P.errors.P2PConnectionFailedError
 
 /**
  * Java-friendly builders for Kotlin callback classes.
@@ -29,72 +28,23 @@ import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
  */
 
 /**
- * Java-friendly builder pattern for [SyncCrolangNodeCallbacks].
+ * Java-friendly builder pattern for [OutgoingCrolangNodeCallbacks].
  */
-class JavaSyncCrolangNodeCallbacks {
+class JavaOutgoingCrolangNodeCallbacks {
     
     /**
-     * Factory methods for creating JavaSyncCrolangNodeCallbacks instances.
+     * Factory methods for creating JavaOutgoingCrolangNodeCallbacks instances.
      */
     companion object {
         /**
          * Creates a new builder instance.
          */
         @JvmStatic
-        fun builder(): JavaSyncCrolangNodeCallbacks = JavaSyncCrolangNodeCallbacks()
-    }
-    
-    private var onDisconnection: (id: String) -> Unit = {}
-    private var onNewMsg: ChannelMessageCallbacks = emptyMap()
-
-    /**
-     * Sets the callback invoked when the node is disconnected (Java-friendly Consumer overload).
-     *
-     * @param callback Consumer receiving the node ID
-     * @return this builder instance
-     */
-    fun onDisconnection(callback: java.util.function.Consumer<String>) = apply {
-        this.onDisconnection = { id -> callback.accept(id) }
-    }
-
-    /**
-     * Sets the map of callbacks for handling incoming P2P messages by channel.
-     *
-     * @param callbacks map where keys are channel names and values are message handlers
-     * @return this builder instance
-     */
-    fun onNewMsg(callbacks: ChannelMessageCallbacks) = apply {
-        this.onNewMsg = callbacks
-    }
-
-    /**
-     * Builds the [SyncCrolangNodeCallbacks] instance.
-     *
-     * @return a new [SyncCrolangNodeCallbacks]
-     */
-    fun build(): SyncCrolangNodeCallbacks {
-        return SyncCrolangNodeCallbacks(onDisconnection, onNewMsg)
-    }
-}
-
-/**
- * Java-friendly builder pattern for [AsyncCrolangNodeCallbacks].
- */
-class JavaAsyncCrolangNodeCallbacks {
-    
-    /**
-     * Factory methods for creating JavaAsyncCrolangNodeCallbacks instances.
-     */
-    companion object {
-        /**
-         * Creates a new builder instance.
-         */
-        @JvmStatic
-        fun builder(): JavaAsyncCrolangNodeCallbacks = JavaAsyncCrolangNodeCallbacks()
+        fun builder(): JavaOutgoingCrolangNodeCallbacks = JavaOutgoingCrolangNodeCallbacks()
     }
     
     private var onConnectionSuccess: (CrolangNode) -> Unit = {}
-    private var onConnectionFailed: (String, ConnectionToNodeFailedReasonException) -> Unit = { _, _ -> }
+    private var onConnectionFailed: (String, P2PConnectionFailedError) -> Unit = { _, _ -> }
     private var onDisconnection: (String) -> Unit = {}
     private var onNewMsg: ChannelMessageCallbacks = emptyMap()
 
@@ -114,7 +64,7 @@ class JavaAsyncCrolangNodeCallbacks {
      * @param callback BiConsumer receiving the node ID and failure reason
      * @return this builder instance
      */
-    fun onConnectionFailed(callback: java.util.function.BiConsumer<String, ConnectionToNodeFailedReasonException>) = apply {
+    fun onConnectionFailed(callback: java.util.function.BiConsumer<String, P2PConnectionFailedError>) = apply {
         this.onConnectionFailed = { id, reason -> callback.accept(id, reason) }
     }
 
@@ -139,12 +89,12 @@ class JavaAsyncCrolangNodeCallbacks {
     }
 
     /**
-     * Builds the [AsyncCrolangNodeCallbacks] instance.
+     * Builds the [OutgoingCrolangNodeCallbacks] instance.
      *
-     * @return a new [AsyncCrolangNodeCallbacks]
+     * @return a new [OutgoingCrolangNodeCallbacks]
      */
-    fun build(): AsyncCrolangNodeCallbacks {
-        return AsyncCrolangNodeCallbacks(
+    fun build(): OutgoingCrolangNodeCallbacks {
+        return OutgoingCrolangNodeCallbacks(
             onConnectionSuccess = onConnectionSuccess,
             onConnectionFailed = onConnectionFailed,
             onDisconnection = onDisconnection,

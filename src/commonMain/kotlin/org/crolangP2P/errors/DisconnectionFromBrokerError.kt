@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package org.crolangP2P
+package org.crolangP2P.errors
 
-import org.crolangP2P.errors.P2PConnectionFailedError
-import java.util.Optional
+enum class DisconnectionFromBrokerError {
+    /**
+     * The local Node is already disconnected from the Broker
+     */
+    ALREADY_DISCONNECTED,
 
-/**
- * Represents the result of a connection attempt to a Crolang node.
- *
- * @property node The connected Crolang node, if the connection was successful.
- * @property exception The reason for the connection failure, if applicable.
- *
- * @see CrolangP2PJvm.Java.connectToMultipleNodesSync
- * @see CrolangP2PJvm.Java.connectToMultipleNodes
- */
-class CrolangNodeConnectionResult(
-    val node: Optional<CrolangNode>,
-    val exception: Optional<P2PConnectionFailedError>
-)
+    /**
+     * Disconnection from the Broker was already triggered on the local Node
+     */
+    ALREADY_PERFORMING_DISCONNECTION
+}

@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package org.crolangP2P
+package org.crolangP2P.errors
 
-import org.crolangP2P.exceptions.ConnectionToNodeFailedReasonException
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
 /**
  * Enum class representing the reasons for connection failures to a remote Node.
  */
-enum class P2PConnectionFailedReason {
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+enum class P2PConnectionFailedError {
     /**
      * The local Node is not connected to the Broker and therefore cannot connect to another Node.
      */
@@ -56,8 +59,6 @@ enum class P2PConnectionFailedReason {
     CONNECTION_NEGOTIATION_ERROR,
     /**
      * The connection to the remote Node is refused via the onConnectionAttempt callback.
-     *
-     * @see IncomingCrolangNodesCallbacks
      */
     CONNECTION_REFUSED_BY_REMOTE_NODE,
     /**
@@ -72,25 +73,4 @@ enum class P2PConnectionFailedReason {
      * P2P connections are disabled in the Broker configuration.
      */
     DISABLED;
-
-    /**
-     * Converts the current instance of [P2PConnectionFailedReason] to a [ConnectionToNodeFailedReasonException].
-     *
-     * @return The corresponding [ConnectionToNodeFailedReasonException] based on the current instance.
-     */
-    internal fun toConnectionToNodeFailedReasonException(): ConnectionToNodeFailedReasonException {
-        return when (this) {
-            LOCAL_NODE_NOT_CONNECTED_TO_BROKER -> ConnectionToNodeFailedReasonException.LocalNodeNotConnectedToBroker
-            TRIED_TO_CONNECT_TO_SELF -> ConnectionToNodeFailedReasonException.TriedToConnectToSelf
-            ALREADY_CONNECTED_TO_REMOTE_NODE -> ConnectionToNodeFailedReasonException.AlreadyConnectedToRemoteNode
-            CONNECTION_ATTEMPT_CLOSED_BY_USER_FORCEFULLY -> ConnectionToNodeFailedReasonException.ConnectionAttemptClosedByUserForcefully
-            CONNECTION_TIMEOUT -> ConnectionToNodeFailedReasonException.ConnectionTimeout
-            REMOTE_NODE_NOT_CONNECTED_TO_BROKER -> ConnectionToNodeFailedReasonException.RemoteNodeNotConnectedToBroker
-            CONNECTION_NEGOTIATION_ERROR -> ConnectionToNodeFailedReasonException.ConnectionNegotiationError
-            CONNECTION_REFUSED_BY_REMOTE_NODE -> ConnectionToNodeFailedReasonException.ConnectionRefusedByRemoteNode
-            CONNECTIONS_NOT_ALLOWED_ON_REMOTE_NODE -> ConnectionToNodeFailedReasonException.ConnectionsNotAllowedOnRemoteNode
-            UNAUTHORIZED_CONNECTION -> ConnectionToNodeFailedReasonException.UnauthorizedConnection
-            DISABLED -> ConnectionToNodeFailedReasonException.Disabled
-        }
-    }
 }

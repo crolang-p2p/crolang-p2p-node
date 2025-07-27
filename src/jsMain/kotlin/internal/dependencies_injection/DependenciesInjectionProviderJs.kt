@@ -53,17 +53,18 @@ internal object DependenciesInjectionProviderJs {
      * @return Complete dependency injection configuration for JavaScript/Node.js runtime
      */
     fun getDependencies(): DependenciesInjection {
+        val eventLoop = ConcreteEventLoopJs()
         return DependenciesInjection(
             myPlatform = BuildConfig.MY_PLATFORM,
             myVersion = BuildConfig.VERSION,
-            eventLoop = ConcreteEventLoopJs(),
+            eventLoop = eventLoop,
             socketCreator = ConcreteCrolangP2PSocketCreatorJs(),
             crolangP2PPeerConnectionFactory = ConcreteCrolangP2PPeerConnectionFactoryJs(),
             uuidGenerator = ConcreteUUIDGeneratorJs(),
             timestampProvider = ConcreteTimestampProviderJs(),
             timerProvider = ConcreteTimerProviderJs(),
             sleepProvider = ConcreteSleepProviderJs(),
-            executorProvider = ConcreteExecutorProviderJs()
+            executorProvider = ConcreteExecutorProviderJs(eventLoop)
         )
     }
 

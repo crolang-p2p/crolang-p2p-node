@@ -21,7 +21,6 @@ import internal.dependencies.socket.CrolangP2PSocketCreator
 import internal.dependencies.webrtc.contracts.CrolangP2PPeerConnectionFactory
 import internal.dependencies.utils.ExecutorProvider
 import internal.dependencies.utils.SleepProvider
-import internal.dependencies.utils.SynchronizationProvider
 import internal.dependencies.utils.TimestampProvider
 import internal.dependencies.utils.TimerProvider
 import internal.dependencies.utils.UUIDGenerator

@@ -20,6 +20,7 @@ import internal.broker.mappings.BrokerEventsMapping
 import internal.broker.mappings.BrokerMessagesMapping
 import internal.dependencies.socket.CrolangP2PSocket
 import internal.utils.SharedStore
+import org.crolangP2P.errors.ConnectionToBrokerError
 
 /**
  * This object is responsible for creating a Socket instance for the Broker connection.
@@ -32,13 +33,19 @@ internal object BrokerSocketCreator {
      * The socket is configured to use WebSocket transport and has a query string with the local node ID.
      * The socket is registered with listeners for events (connected, authenticated, disconnected, etc...) and messages.
      *
+     * @param onSuccess Callback to be invoked when the socket is successfully created and connected.
+     * @param onError Callback to be invoked if an error occurs during the socket creation or connection.
+     *
      * @return A Socket instance.
      */
-    fun createSocket(): CrolangP2PSocket {
+    fun createSocket(
+        onSuccess: () -> Unit = {},
+        onError: (err: ConnectionToBrokerError) -> Unit = { _ -> }
+    ): CrolangP2PSocket {
         val socket = SharedStore.dependencies!!.socketCreator.create(
             SharedStore.localNodeId, SharedStore.dependencies!!.myVersion, SharedStore.onConnectionToBrokerSettings!!
         )
-        BrokerEventsMapping.registerEventListeners(socket)
+        BrokerEventsMapping.registerEventListeners(socket, onSuccess, onError)
         BrokerMessagesMapping.registerMsgListeners(socket)
         return socket
     }

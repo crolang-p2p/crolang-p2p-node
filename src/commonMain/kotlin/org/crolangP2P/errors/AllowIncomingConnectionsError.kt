@@ -14,30 +14,21 @@
  * limitations under the License.
  */
 
-package org.crolangP2P.exceptions
+package org.crolangP2P.errors
 
 /**
- * Exception thrown when trying to allow incoming connections.
- *
- * @param message The message of the exception.
- *
- * @see NotConnectedToBroker
- * @see IncomingConnectionsAlreadyAllowed
+ * This enum represents the possible errors while trying to allow incoming connections.
  */
-sealed class AllowIncomingConnectionsException(message: String) : Exception(message) {
+enum class AllowIncomingConnectionsError {
 
     /**
      * Exception thrown when the node is not connected to the Broker.
      */
-    data object NotConnectedToBroker : AllowIncomingConnectionsException("NOT_CONNECTED_TO_BROKER") {
-        private fun readResolve(): Any = NotConnectedToBroker
-    }
+    NOT_CONNECTED_TO_BROKER,
 
     /**
      * Exception thrown when the node is already connected to the Broker.
      */
-    data object IncomingConnectionsAlreadyAllowed : AllowIncomingConnectionsException("INCOMING_CONNECTIONS_ALREADY_ALLOWED") {
-        private fun readResolve(): Any = IncomingConnectionsAlreadyAllowed
-    }
+    INCOMING_CONNECTIONS_ALREADY_ALLOWED;
 
 }
