@@ -219,21 +219,21 @@ internal class OnSendSocketMsgResponse(
     private val onError: (err: SendSocketMsgError) -> Unit
 ): Event {
     override fun process() {
-        if (args.size != 1 || args[0] !is String) {
+        val extracted = extractMessageFromPayload(args)
+        if(extracted == null) {
             executeCallbackOnExecutor {
                 onError(SendSocketMsgError.fromMessage(SocketResponses.ERROR))
             }
             return
         }
-        val response = args[0] as String
-        if (SocketResponses.ALL.contains(response)) {
-            if (SocketResponses.isOk(response)) {
+        if (SocketResponses.ALL.contains(extracted)) {
+            if (SocketResponses.isOk(extracted)) {
                 executeCallbackOnExecutor {
                     onMsgSent()
                 }
             } else {
                 executeCallbackOnExecutor {
-                    onError(SendSocketMsgError.fromMessage(response))
+                    onError(SendSocketMsgError.fromMessage(extracted))
                 }
             }
         } else {
