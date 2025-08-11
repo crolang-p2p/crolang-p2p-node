@@ -72,18 +72,18 @@ internal object RuntimeDependencyResolver {
 
         return Optional.ofNullable(when {
             osName.contains("mac") -> when {
-                arch.contains("aarch64") -> Pair("macos-aarch64", "0.10.0")
-                arch.contains("x86_64") || arch.contains("amd64") -> Pair("macos-x86_64", "0.10.0")
+                arch.contains("aarch64") -> Pair("macos-aarch64", "0.13.0")
+                arch.contains("x86_64") || arch.contains("amd64") -> Pair("macos-x86_64", "0.13.0")
                 else -> null
             }
             osName.contains("win") -> when {
-                arch.contains("x86_64") || arch.contains("amd64") -> Pair("windows-x86_64", "0.10.0")
+                arch.contains("x86_64") || arch.contains("amd64") -> Pair("windows-x86_64", "0.13.0")
                 else -> null
             }
             osName.contains("nix") || osName.contains("nux") -> when {
-                arch.contains("x86_64") || arch.contains("amd64") -> Pair("linux-x86_64", "0.10.0")
-                arch.contains("aarch64") -> Pair("linux-aarch64", "0.8.0")
-                arch.contains("aarch32") -> Pair("linux-aarch32", "0.8.0")
+                arch.contains("x86_64") || arch.contains("amd64") -> Pair("linux-x86_64", "0.13.0")
+                arch.contains("aarch64") -> Pair("linux-aarch64", "0.13.0")
+                arch.contains("aarch32") -> Pair("linux-aarch32", "0.13.0")
                 else -> null
             }
             else -> null

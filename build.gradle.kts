@@ -117,7 +117,7 @@ kotlin {
                     exclude(group = "org.json", module = "json")
                 }
                 implementation("org.json:json:20250107")
-                implementation("dev.onvoid.webrtc:webrtc-java:0.10.0")
+                implementation("dev.onvoid.webrtc:webrtc-java:0.13.0")
             }
             
             // Add generated JVM-specific BuildConfig to jvmMain sourceSets

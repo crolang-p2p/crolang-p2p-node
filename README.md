@@ -49,8 +49,6 @@ This library is built with Kotlin Multiplatform and currently supports the follo
 
 Add the dependency to your project using one of the snippets available in the [Maven Central Repository page](https://central.sonatype.com/artifact/io.github.crolang-p2p/crolang-p2p-node-jvm/overview).
 
-**Note:** If you are using Linux on an aarch32 or aarch64 architecture, please do not use Java 21, as it is not supported by the WebRTC implementation used by this library. Use any other version of Java 11+ instead.
-
 **Documentation and Examples:**
 - Kotlin usage: [examples-kotlin-crolang-p2p-node-jvm](https://github.com/crolang-p2p/examples-kotlin-crolang-p2p-node-jvm)
 - Java usage: [examples-java-crolang-p2p-node-jvm](https://github.com/crolang-p2p/examples-java-crolang-p2p-node-jvm)
