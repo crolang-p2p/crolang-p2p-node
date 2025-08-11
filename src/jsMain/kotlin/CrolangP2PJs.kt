@@ -27,6 +27,7 @@ import org.crolangP2P.CrolangSettings
 import org.crolangP2P.IncomingCrolangNodesCallbacks
 import org.crolangP2P.LoggingOptions
 import org.crolangP2P.OutgoingCrolangNodeCallbacks
+import org.crolangP2P.errors.P2PConnectionFailedError
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -329,18 +330,30 @@ object CrolangP2PJs {
      * Each target node can have its own set of callbacks for handling events.
      * 
      * @param targets Configuration specifying target nodes and their respective callbacks
+     * @param onConnectionAttemptConcluded Callback invoked when the connection attempt concludes, returning a ConnectionAttemptResultJs
      * @return Connection attempt object for monitoring and controlling all connections
+     *
+     * @see ConnectionAttemptResultJs
      */
-    fun connectToMultipleNodes(targets: CrolangNodeConnectionTargetsJs): ConnectionAttemptJs {
+    fun connectToMultipleNodes(
+        targets: CrolangNodeConnectionTargetsJs,
+        onConnectionAttemptConcluded: (result: ConnectionAttemptResultJs) -> Unit
+    ): ConnectionAttemptJs {
         return ConnectionAttemptJs(coreFacade.connectToMultipleNodes(
-            targets.getTargets().mapValues { target -> OutgoingCrolangNodeCallbacks(
+            targets = targets.getTargets().mapValues { target -> OutgoingCrolangNodeCallbacks(
                 onConnectionSuccess = { target.value.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
                 onConnectionFailed = { id, reason -> target.value.getOnConnectionFailed().invoke(id, reason) },
                 onDisconnection = target.value.getOnDisconnection(),
                 onNewMsg = target.value.getOnNewMsgCallbacks().mapValues { (_, callback) ->
                     { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
                 }
-            ) }
+            ) },
+            onConnectionAttemptConcluded = { connected, failed ->
+                onConnectionAttemptConcluded(ConnectionAttemptResultJs(
+                    connectedNodes = connected.map { CrolangNodeJs(it.value) }.toList(),
+                    failedNodes = failed.map { ConnectionAttemptFailedNodeJs(it.key, it.value) }.toList()
+                ))
+            }
         ))
     }
 
