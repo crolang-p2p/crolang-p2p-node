@@ -264,9 +264,9 @@ object CrolangP2PJs {
      * Existing connections remain active.
      */
     @OptIn(DelicateCoroutinesApi::class)
-    fun stopIncomingConnections(): kotlin.js.Promise<dynamic> {
+    fun stopIncomingConnections(): kotlin.js.Promise<CrolangP2PJs> {
         return GlobalScope.promise { suspendCoroutine { continuation ->
-            coreFacade.stopIncomingConnections { continuation.resume(Unit) }
+            coreFacade.stopIncomingConnections { continuation.resume(CrolangP2PJs) }
         } }
     }
 
