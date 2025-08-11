@@ -17,6 +17,6 @@
 @OptIn(ExperimentalJsExport::class)
 @JsExport
 class ConnectionAttemptResultJs(
-    val connectedNodes: List<CrolangNodeJs>,
-    val failedNodes: List<ConnectionAttemptFailedNodeJs>
+    val connectedNodes: Array<CrolangNodeJs>,
+    val failedNodes: Array<ConnectionAttemptFailedNodeJs>
 )

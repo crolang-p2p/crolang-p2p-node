@@ -350,8 +350,8 @@ object CrolangP2PJs {
             ) },
             onConnectionAttemptConcluded = { connected, failed ->
                 onConnectionAttemptConcluded(ConnectionAttemptResultJs(
-                    connectedNodes = connected.map { CrolangNodeJs(it.value) }.toList(),
-                    failedNodes = failed.map { ConnectionAttemptFailedNodeJs(it.key, it.value) }.toList()
+                    connectedNodes = connected.map { CrolangNodeJs(it.value) }.toTypedArray(),
+                    failedNodes = failed.map { ConnectionAttemptFailedNodeJs(it.key, it.value) }.toTypedArray()
                 ))
             }
         ))
