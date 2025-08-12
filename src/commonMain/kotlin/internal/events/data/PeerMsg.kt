@@ -115,7 +115,7 @@ internal class PeerMsgPartParsable {
     /**
      * Converts the PeerMsgPartParsable object into a PeerMsgPart object if all necessary fields are present.
      *
-     * @return An nullable containing the PeerMsgPart if valid, null otherwise.
+     * @return A nullable containing the PeerMsgPart if valid, null otherwise.
      */
     fun toChecked(): PeerMsgPart? {
         return if (msgType == null || msgId == null || channel == null || payload == null || part == null || total == null) {
@@ -174,7 +174,7 @@ internal class IncomingMultipartP2PMsg(
      * Deposits a new part of the message. If all parts are received, the message is reassembled and returned.
      *
      * @param part The new part of the message to deposit.
-     * @return An nullable containing the result of merging the parts (MsgPartsMergeResult),
+     * @return A nullable containing the result of merging the parts (MsgPartsMergeResult),
      *         null if all parts are not yet received.
      */
     fun depositNewPart(part: PeerMsgPart): MsgPartsMergeResult? {
