@@ -113,7 +113,7 @@ object CrolangP2PJs {
                 onSuccessfullyReconnected = additionalParameters.getLifecycleCallbacks().getOnSuccessfullyReconnected()
             ),
             settings = CrolangSettings(
-                p2pConnectionTimeoutMillis = additionalParameters.getSettings().getP2pConnectionTimeoutMillis(),
+                p2pConnectionTimeoutMillis = additionalParameters.getSettings().getP2PConnectionTimeoutMillis(),
                 multipartP2PMessageTimeoutMillis = additionalParameters.getSettings().getMultipartP2PMessageTimeoutMillis(),
                 reconnection = additionalParameters.getSettings().isReconnectionEnabled(),
                 maxReconnectionAttempts = additionalParameters.getSettings().getMaxReconnectionAttempts(),
