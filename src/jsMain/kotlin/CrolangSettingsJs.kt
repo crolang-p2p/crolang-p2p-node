@@ -43,7 +43,7 @@ class CrolangSettingsJs {
      * @param timeout Timeout in milliseconds (default: 30000)
      * @return This instance for method chaining
      */
-    fun setP2pConnectionTimeoutMillis(timeout: Int): CrolangSettingsJs {
+    fun setP2PConnectionTimeoutMillis(timeout: Int): CrolangSettingsJs {
         this.p2pConnectionTimeoutMillis = timeout
         return this
     }
@@ -53,7 +53,7 @@ class CrolangSettingsJs {
      * 
      * @return Timeout in milliseconds
      */
-    fun getP2pConnectionTimeoutMillis(): Int {
+    fun getP2PConnectionTimeoutMillis(): Int {
         return p2pConnectionTimeoutMillis
     }
     
