@@ -246,7 +246,9 @@ object CrolangP2PJs {
                 IncomingCrolangNodesCallbacks(
                     onConnectionAttempt = callbacks.getOnConnectionAttempt(),
                     onConnectionSuccess = { callbacks.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
-                    onConnectionFailed = { id, reason -> callbacks.getOnConnectionFailed().invoke(id, reason) },
+                    onConnectionFailed = { id, reason -> callbacks.getOnConnectionFailed().invoke(
+                        id, P2PConnectionFailedErrorJS.fromInternal(reason)
+                    ) },
                     onDisconnection = callbacks.getOnDisconnection(),
                     onNewMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
                         { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
@@ -314,7 +316,7 @@ object CrolangP2PJs {
         return ConnectionAttemptJs(coreFacade.connectToSingleNode(id, OutgoingCrolangNodeCallbacks(
             onConnectionSuccess = { callbacks.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
             onConnectionFailed = { onConnectionFailedId, reason -> callbacks.getOnConnectionFailed().invoke(
-                onConnectionFailedId, reason
+                onConnectionFailedId, P2PConnectionFailedErrorJS.fromInternal(reason)
             ) },
             onDisconnection = callbacks.getOnDisconnection(),
             onNewMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
@@ -342,7 +344,9 @@ object CrolangP2PJs {
         return ConnectionAttemptJs(coreFacade.connectToMultipleNodes(
             targets = targets.getTargets().mapValues { target -> OutgoingCrolangNodeCallbacks(
                 onConnectionSuccess = { target.value.getOnConnectionSuccess().invoke(CrolangNodeJs(it)) },
-                onConnectionFailed = { id, reason -> target.value.getOnConnectionFailed().invoke(id, reason) },
+                onConnectionFailed = { id, reason -> target.value.getOnConnectionFailed().invoke(
+                    id, P2PConnectionFailedErrorJS.fromInternal(reason)
+                ) },
                 onDisconnection = target.value.getOnDisconnection(),
                 onNewMsg = target.value.getOnNewMsgCallbacks().mapValues { (_, callback) ->
                     { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
