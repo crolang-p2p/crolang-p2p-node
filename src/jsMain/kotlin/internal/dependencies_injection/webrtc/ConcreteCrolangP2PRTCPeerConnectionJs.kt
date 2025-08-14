@@ -90,7 +90,7 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
         // Data channel events
         webrtcKmpPeerConnection.onDataChannel
             .onEach { dataChannel ->
-                onDataChannel(ConcreteCrolangP2PRTCDataChannelJs(dataChannel))
+                onDataChannel(ConcreteCrolangP2PRTCDataChannelJs(dataChannel, scope))
             }
             .launchIn(scope)
     }
@@ -108,7 +108,7 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
             label = "crolang-messages",
             ordered = true
         )
-        return ConcreteCrolangP2PRTCDataChannelJs(webrtcKmpDataChannel!!)
+        return ConcreteCrolangP2PRTCDataChannelJs(webrtcKmpDataChannel!!, scope)
     }
 
     /**
@@ -249,11 +249,47 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
     /**
      * Closes the peer connection and releases all associated resources.
      * 
-     * This method cancels all coroutines and closes the underlying WebRTC
-     * peer connection, terminating the connection to the remote peer.
+     * This method cancels all coroutines and conditionally closes the native
+     * WebRTC connection. In Node.js environments, we avoid calling close()
+     * to prevent FATAL ERRORs during native object finalization.
      */
     override fun close() {
-        scope.cancel() // Cancel all coroutines
-        webrtcKmpPeerConnection.close()
+        try {
+            // Cancel the scope to stop all Flow collection
+            scope.cancel()
+        } catch (e: Exception) {
+            println("Error canceling scope: ${e.message}")
+        }
+        
+        if (!isRunningInNodeJs()) {
+            // We're in a browser - safe to call close() (on Node.js this would cause FATAL ERROR, automatically handled by garbage collection)
+            try {
+                webrtcKmpPeerConnection.close()
+                println("Browser environment - WebRTC connection closed")
+            } catch (e: Exception) {
+                println("Browser cleanup error: ${e.message}")
+            }
+        } else {
+            // We're in Node.js - avoid close() to prevent FATAL ERROR
+            println("Node.js environment detected - skipping webrtcKmpPeerConnection.close() to avoid FATAL ERROR")
+            // Let garbage collection handle the cleanup automatically
+        }
+    }
+    
+    /**
+     * Detects if the code is running in Node.js environment
+     */
+    private fun isRunningInNodeJs(): Boolean {
+        return try {
+            // Simple approach: check if we can access Node.js process object
+            val processExists = js("typeof process !== 'undefined'")
+            val windowExists = js("typeof window !== 'undefined'") 
+            
+            // Node.js has process but no window
+            processExists == true && windowExists == false
+        } catch (e: Exception) {
+            // If detection fails, assume Node.js to be safe (avoid close())
+            true
+        }
     }
 }

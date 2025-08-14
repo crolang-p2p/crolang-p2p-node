@@ -35,11 +35,9 @@ import kotlinx.coroutines.flow.onEach
  * observer-based API expected by the crolang-p2p-node architecture.
  */
 internal class ConcreteCrolangP2PRTCDataChannelJs(
-    private val webrtcKmpDataChannel: DataChannel
+    private val webrtcKmpDataChannel: DataChannel,
+    private val sharedScope: CoroutineScope // Use shared scope from PeerConnection
 ) : CrolangP2PRTCDataChannel() {
-    
-    // Coroutine scope for managing Flow collectors
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
     // Current observer for state changes and messages
     private var currentObserver: CrolangP2PRTCDataChannelObserver? = null
@@ -57,34 +55,34 @@ internal class ConcreteCrolangP2PRTCDataChannelJs(
             .onEach { data ->
                 currentObserver?.onMessage(data)
             }
-            .launchIn(scope)
+            .launchIn(sharedScope)
         
         // State change events - we need to monitor multiple flows
         webrtcKmpDataChannel.onOpen
             .onEach { 
                 currentObserver?.onStateChange() 
             }
-            .launchIn(scope)
+            .launchIn(sharedScope)
         
         webrtcKmpDataChannel.onClose
             .onEach { 
                 currentObserver?.onStateChange() 
             }
-            .launchIn(scope)
+            .launchIn(sharedScope)
         
         webrtcKmpDataChannel.onClosing
             .onEach { 
                 currentObserver?.onStateChange() 
             }
-            .launchIn(scope)
+            .launchIn(sharedScope)
         
         webrtcKmpDataChannel.onError
             .onEach { error ->
                 // Log error but still notify state change
-                console.log("DataChannel error: $error")
+                println("DataChannel error: $error")
                 currentObserver?.onStateChange()
             }
-            .launchIn(scope)
+            .launchIn(sharedScope)
     }
 
     /**
@@ -134,10 +132,12 @@ internal class ConcreteCrolangP2PRTCDataChannelJs(
     /**
      * Closes the data channel and releases all associated resources.
      * 
-     * This method cancels all coroutines and closes the underlying WebRTC data channel.
+     * This method closes the underlying WebRTC data channel.
+     * Note: The shared scope is managed by the parent PeerConnection.
      */
     override fun close() {
-        scope.cancel() // Cancel all coroutines
+        // Note: We don't cancel the shared scope here as it's managed by PeerConnection
+        // The scope will be cancelled when the PeerConnection is closed
         webrtcKmpDataChannel.close()
     }
 }
