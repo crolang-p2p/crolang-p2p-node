@@ -265,14 +265,9 @@ internal class ConcreteCrolangP2PRTCPeerConnectionJs(
             // We're in a browser - safe to call close() (on Node.js this would cause FATAL ERROR, automatically handled by garbage collection)
             try {
                 webrtcKmpPeerConnection.close()
-                println("Browser environment - WebRTC connection closed")
             } catch (e: Exception) {
                 println("Browser cleanup error: ${e.message}")
             }
-        } else {
-            // We're in Node.js - avoid close() to prevent FATAL ERROR
-            println("Node.js environment detected - skipping webrtcKmpPeerConnection.close() to avoid FATAL ERROR")
-            // Let garbage collection handle the cleanup automatically
         }
     }
     
