@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.crolangP2P.errors.P2PConnectionFailedError
-
 /*
  * Copyright 2025 Alessandro Talmi
  *
@@ -33,6 +31,110 @@ import org.crolangP2P.errors.P2PConnectionFailedError
  */
 
 /**
+ * Callbacks for handling incoming byte array messages.
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+class IncomingByteArrayMsgCallbacksJs{
+    var onNewMsgPartReceived: (node: CrolangNodeJs, msgId: Int, part: Int, total: Int) -> Unit = { _, _, _, _ -> }
+    var onNewCompleteMsgReceived: (node: CrolangNodeJs, msgId: Int, msg: ByteArray) -> Unit = { _, _, _ -> }
+    var onMsgCorruption: (node: CrolangNodeJs, msgId: Int) -> Unit = { _, _ -> }
+
+    /**
+     * Sets the callback for receiving a new part of a byte array message.
+     *
+     * This callback is triggered when a new part of a byte array message is received.
+     *
+     * @param callback Function that receives the node, message ID, part number, and total parts
+     * @return This instance for method chaining
+     */
+    fun setOnNewMsgPartReceived(
+        callback: (node: CrolangNodeJs, msgId: Int, part: Int, total: Int) -> Unit
+    ): IncomingByteArrayMsgCallbacksJs {
+        onNewMsgPartReceived = callback
+        return this
+    }
+
+    /**
+     * Gets the currently configured callback for new message parts.
+     *
+     * @return The configured callback function
+     */
+    fun getOnNewMsgPartReceived(): (node: CrolangNodeJs, msgId: Int, part: Int, total: Int) -> Unit {
+        return onNewMsgPartReceived
+    }
+
+    /**
+     * Sets the callback for receiving a complete byte array message.
+     *
+     * This callback is triggered when a complete byte array message is received.
+     *
+     * @param callback Function that receives the node, message ID, and complete message
+     * @return This instance for method chaining
+     */
+    fun setOnNewCompleteMsgReceived(
+        callback: (node: CrolangNodeJs, msgId: Int, msg: ByteArray) -> Unit
+    ): IncomingByteArrayMsgCallbacksJs {
+        onNewCompleteMsgReceived = callback
+        return this
+    }
+
+    /**
+     * Gets the currently configured callback for complete messages.
+     *
+     * @return The configured callback function
+     */
+    fun getOnNewCompleteMsgReceived(): (node: CrolangNodeJs, msgId: Int, msg: ByteArray) -> Unit {
+        return onNewCompleteMsgReceived
+    }
+
+    /**
+     * Sets the callback for handling message corruption.
+     *
+     * This callback is triggered when a byte array message is detected as corrupted.
+     *
+     * @param callback Function that receives the node and message ID of the corrupted message
+     * @return This instance for method chaining
+     */
+    fun setOnMsgCorruption(
+        callback: (node: CrolangNodeJs, msgId: Int) -> Unit
+    ): IncomingByteArrayMsgCallbacksJs {
+        onMsgCorruption = callback
+        return this
+    }
+
+    /**
+     * Gets the currently configured callback for message corruption.
+     *
+     * @return The configured callback function
+     */
+    fun getOnMsgCorruption(): (node: CrolangNodeJs, msgId: Int) -> Unit {
+        return onMsgCorruption
+    }
+
+}
+
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+/**
+ * Builder for creating [IncomingByteArrayMsgCallbacksJs] instances.
+ *
+ * This builder provides a convenient way to create callback objects
+ * for handling incoming byte array messages with default no-op implementations.
+ */
+object IncomingByteArrayMsgCallbacksJsBuilder {
+
+    /**
+     * Creates a new [IncomingByteArrayMsgCallbacksJs] instance with default callbacks.
+     *
+     * @return A new callback configuration instance ready for customization
+     */
+    fun create(): IncomingByteArrayMsgCallbacksJs {
+        return IncomingByteArrayMsgCallbacksJs()
+    }
+}
+
+/**
  * Callbacks for handling incoming P2P connection events.
  * 
  * This class configures how your node responds to connection attempts from other nodes
@@ -48,7 +150,8 @@ class IncomingCrolangNodesCallbacksJs {
     private var onConnectionSuccess: (node: CrolangNodeJs) -> Unit = {}
     private var onConnectionFailed: (id: String, reason: P2PConnectionFailedErrorJS) -> Unit = { _, _ -> }
     private var onDisconnection: (id: String) -> Unit = {}
-    private var onNewMsq: Map<String, (CrolangNodeJs, String) -> Unit> = emptyMap()
+    private var onNewStringMsq: Map<String, (CrolangNodeJs, String) -> Unit> = emptyMap()
+    private var onNewByteArrayMsg: Map<String, IncomingByteArrayMsgCallbacksJs> = emptyMap()
 
     /**
      * Sets the callback for incoming connection attempts.
@@ -144,27 +247,52 @@ class IncomingCrolangNodesCallbacksJs {
     }
 
     /**
-     * Adds a message callback for a specific channel.
+     * Adds a string message callback for a specific channel.
      * 
-     * This callback is triggered when a connected node sends a message on the specified channel.
+     * This callback is triggered when a connected node sends a string message on the specified channel.
      * You can register multiple callbacks for different channels.
      * 
-     * @param channel The message channel to listen to
-     * @param callback Function that receives the sender node and message content
+     * @param channel The string message channel to listen to
+     * @param callback Function that receives the sender node and string message content
      * @return This instance for method chaining
      */
-    fun addOnNewMsgCallback(channel: String, callback: (CrolangNodeJs, String) -> Unit): IncomingCrolangNodesCallbacksJs {
-        onNewMsq = onNewMsq + (channel to callback)
+    fun addOnNewStringMsgCallback(channel: String, callback: (CrolangNodeJs, String) -> Unit): IncomingCrolangNodesCallbacksJs {
+        onNewStringMsq = onNewStringMsq + (channel to callback)
         return this
     }
 
     /**
-     * Gets all configured message callbacks by channel.
+     * Gets all configured string message callbacks by channel.
      * 
      * @return Map of channel names to their callback functions
      */
-    fun getOnNewMsgCallbacks(): Map<String, (CrolangNodeJs, String) -> Unit> {
-        return onNewMsq
+    fun getOnNewStringMsgCallbacks(): Map<String, (CrolangNodeJs, String) -> Unit> {
+        return onNewStringMsq
+    }
+
+    /**
+     * Adds a byte array message callback for a specific channel.
+     * This callback is triggered when a connected node sends a byte array message on the specified channel.
+     * You can register multiple callbacks for different channels.
+     * @param channel The byte array message channel to listen to
+     * @param callbacks The callbacks to handle byte array messages
+     * @return This instance for method chaining
+     */
+    fun addOnNewByteArrayMsgCallback(
+        channel: String,
+        callbacks: IncomingByteArrayMsgCallbacksJs
+    ): IncomingCrolangNodesCallbacksJs {
+        onNewByteArrayMsg = onNewByteArrayMsg + (channel to callbacks)
+        return this
+    }
+
+    /**
+     * Gets all configured byte array message callbacks by channel.
+     *
+     * @return Map of channel names to their callback configurations
+     */
+    fun getOnNewByteArrayMsgCallbacks(): Map<String, IncomingByteArrayMsgCallbacksJs> {
+        return onNewByteArrayMsg
     }
 
 }
@@ -204,7 +332,8 @@ class CrolangNodeCallbacksJs {
     private var onConnectionSuccess: (node: CrolangNodeJs) -> Unit = {}
     private var onConnectionFailed: (id: String, reason: P2PConnectionFailedErrorJS) -> Unit = { _, _ -> }
     private var onDisconnection: (id: String) -> Unit = {}
-    private var onNewMsq: Map<String, (CrolangNodeJs, String) -> Unit> = emptyMap()
+    private var onNewStringMsg: Map<String, (CrolangNodeJs, String) -> Unit> = emptyMap()
+    private var onNewByteArrayMsg: Map<String, IncomingByteArrayMsgCallbacksJs> = emptyMap()
 
     /**
      * Sets the callback for successful outgoing connections.
@@ -283,7 +412,7 @@ class CrolangNodeCallbacksJs {
      * @return This instance for method chaining
      */
     fun addOnNewMsgCallback(channel: String, callback: (CrolangNodeJs, String) -> Unit): CrolangNodeCallbacksJs {
-        onNewMsq = onNewMsq + (channel to callback)
+        onNewStringMsg = onNewStringMsg + (channel to callback)
         return this
     }
 
@@ -293,8 +422,36 @@ class CrolangNodeCallbacksJs {
      * @return Map of channel names to their callback functions
      */
     fun getOnNewMsgCallbacks(): Map<String, (CrolangNodeJs, String) -> Unit> {
-        return onNewMsq
+        return onNewStringMsg
     }
+
+    /**
+     * Adds a byte array message callback for a specific channel.
+     *
+     * This callback is triggered when the connected node sends a byte array message on the specified channel.
+     * You can register multiple callbacks for different channels.
+     *
+     * @param channel The byte array message channel to listen to
+     * @param callbacks The callbacks to handle byte array messages
+     * @return This instance for method chaining
+     */
+    fun addOnNewByteArrayMsgCallback(
+        channel: String,
+        callbacks: IncomingByteArrayMsgCallbacksJs
+    ): CrolangNodeCallbacksJs {
+        onNewByteArrayMsg = onNewByteArrayMsg + (channel to callbacks)
+        return this
+    }
+
+    /**
+     * Gets all configured byte array message callbacks by channel.
+     *
+     * @return Map of channel names to their callback configurations
+     */
+    fun getOnNewByteArrayMsgCallbacks(): Map<String, IncomingByteArrayMsgCallbacksJs> {
+        return onNewByteArrayMsg
+    }
+
 }
 
 /**

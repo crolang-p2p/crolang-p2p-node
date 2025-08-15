@@ -24,20 +24,42 @@ import org.crolangP2P.errors.P2PConnectionFailedError
 typealias Channel = String
 
 /**
- * Map of callbacks to be called when a new P2P message is received, keyed by channel.
+ * Map of callbacks to be called when a new P2P string message is received, keyed by channel.
  */
-typealias ChannelMessageCallbacks = Map<Channel, (node: CrolangNode, msg: String) -> Unit>
+typealias ChannelMessageStringCallbacks = Map<Channel, (node: CrolangNode, msg: String) -> Unit>
+
+/**
+ * Map of callbacks to be called when a new P2P byte array message is received, keyed by channel.
+ * The callbacks are executed asynchronously on an executor service.
+ */
+typealias ChannelMessageByteArrayCallbacks = Map<Channel, IncomingByteArrayMsgCallbacks>
 
 /**
  * User-defined callbacks for a CrolangNode, common to every possible Node creation method;
  * the callbacks are executed asynchronously on an executor service.
  *
  * @param onDisconnection Callback to be called when the node is disconnected.
- * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel.
+ * @param onNewStringMsg Map of callbacks to be called when a new P2P string message is received, keyed by channel.
+ * @param onNewByteArrayMsg Map of callbacks to be called when a new P2P byte array message is received, keyed by channel.
  */
 abstract class BasicCrolangNodeCallbacks(
     val onDisconnection: (id: String) -> Unit,
-    val onNewMsg: ChannelMessageCallbacks
+    val onNewStringMsg: ChannelMessageStringCallbacks,
+    val onNewByteArrayMsg: ChannelMessageByteArrayCallbacks
+)
+
+/**
+ * User-defined callbacks for a CrolangNode that will receive byte array messages;
+ * the callbacks are executed asynchronously on an executor service.
+ *
+ * @param onNewMsgPartReceived Callback to be called when a new part of a byte array message is received.
+ * @param onNewCompleteMsgReceived Callback to be called when a complete byte array message is received.
+ * @param onMsgCorruption Callback to be called when a byte array message is corrupted.
+ */
+class IncomingByteArrayMsgCallbacks(
+    val onNewMsgPartReceived: (node: CrolangNode, msgId: Int, part: Int, total: Int) -> Unit = { _, _, _, _ -> },
+    val onNewCompleteMsgReceived: (node: CrolangNode, msgId: Int, msg: ByteArray) -> Unit = { _, _, _ -> },
+    val onMsgCorruption: (node: CrolangNode, msgId: Int) -> Unit = { _, _ -> }
 )
 
 /**
@@ -47,14 +69,16 @@ abstract class BasicCrolangNodeCallbacks(
  * @param onConnectionSuccess Callback to be called when the node is successfully connected. Optional, defaults to an empty function.
  * @param onConnectionFailed Callback to be called when the node connection fails. Optional, defaults to an empty function.
  * @param onDisconnection Callback to be called when the node is disconnected. Optional, defaults to an empty function.
- * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel. Optional, defaults to an empty map.
+ * @param onNewStringMsg Map of callbacks to be called when a new P2P string message is received, keyed by channel. Optional, defaults to an empty map.
+ * @param onNewByteArrayMsg Map of callbacks to be called when a new P2P byte array message is received, keyed by channel. Optional, defaults to an empty map.
  */
 class OutgoingCrolangNodeCallbacks(
     val onConnectionSuccess: (node: CrolangNode) -> Unit = {},
     val onConnectionFailed: (id: String, reason: P2PConnectionFailedError) -> Unit = { _, _ -> },
     onDisconnection: (id: String) -> Unit = {},
-    onNewMsg: ChannelMessageCallbacks = emptyMap()
-) : BasicCrolangNodeCallbacks(onDisconnection, onNewMsg)
+    onNewStringMsg: ChannelMessageStringCallbacks = emptyMap(),
+    onNewByteArrayMsg: ChannelMessageByteArrayCallbacks = emptyMap()
+) : BasicCrolangNodeCallbacks(onDisconnection, onNewStringMsg, onNewByteArrayMsg)
 
 /**
  * User-defined callbacks for a CrolangNode whose connection is initiated by another client;
@@ -64,12 +88,14 @@ class OutgoingCrolangNodeCallbacks(
  * @param onConnectionSuccess Callback to be called when the node is successfully connected. Optional, defaults to an empty function.
  * @param onConnectionFailed Callback to be called when the node connection fails. Optional, defaults to an empty function.
  * @param onDisconnection Callback to be called when the node is disconnected. Optional, defaults to an empty function.
- * @param onNewMsg Map of callbacks to be called when a new P2P message is received, keyed by channel. Optional, defaults to an empty map.
+ * @param onNewStringMsg Map of callbacks to be called when a new P2P string message is received, keyed by channel. Optional, defaults to an empty map.
+ * @param onNewByteArrayMsg Map of callbacks to be called when a new P2P byte array message is received, keyed by channel. Optional, defaults to an empty map.
  */
 class IncomingCrolangNodesCallbacks(
     val onConnectionAttempt: (id: String, platform: String, version: String) -> Boolean = { _, _, _ -> true },
     val onConnectionSuccess: (node: CrolangNode) -> Unit = {},
     val onConnectionFailed: (id: String, reason: P2PConnectionFailedError) -> Unit = { _, _ -> },
     onDisconnection: (id: String) -> Unit = {},
-    onNewMsg: ChannelMessageCallbacks = emptyMap()
-) : BasicCrolangNodeCallbacks(onDisconnection, onNewMsg)
+    onNewStringMsg: ChannelMessageStringCallbacks = emptyMap(),
+    onNewByteArrayMsg: ChannelMessageByteArrayCallbacks = emptyMap()
+) : BasicCrolangNodeCallbacks(onDisconnection, onNewStringMsg, onNewByteArrayMsg)

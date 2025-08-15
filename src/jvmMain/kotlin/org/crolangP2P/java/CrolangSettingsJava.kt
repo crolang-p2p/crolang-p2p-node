@@ -21,7 +21,7 @@ import org.crolangP2P.CrolangSettings
 /**
  * Java-friendly builder pattern for [CrolangSettings].
  */
-class JavaCrolangSettings {
+class CrolangSettingsJava {
     
     /**
      * Factory methods for creating JavaCrolangSettings instances.
@@ -31,7 +31,7 @@ class JavaCrolangSettings {
          * Creates a new builder instance.
          */
         @JvmStatic
-        fun builder(): JavaCrolangSettings = JavaCrolangSettings()
+        fun builder(): CrolangSettingsJava = CrolangSettingsJava()
     }
     
     private var p2pConnectionTimeoutMillis: Int = 30000

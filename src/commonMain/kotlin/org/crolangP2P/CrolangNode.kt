@@ -16,6 +16,7 @@
 
 package org.crolangP2P
 
+import internal.events.data.abstractions.P2PMsgTypes
 import internal.node.AbstractNode
 import internal.node.NodeState
 import internal.utils.SharedStore.logger
@@ -44,29 +45,30 @@ class CrolangNode private constructor(private val abstractNode: AbstractNode) {
      * Sends a P2P message to the remote Node in the specified channel.
      *
      * @param channel The channel to send the message to.
-     * @param msg The message to send.
+     * @param msg The message to send, default is an empty string.
      *
      * @return true if the message was sent successfully, false otherwise.
      *
-     * @see IncomingCrolangNodesCallbacks.onNewMsg
-     * @see OutgoingCrolangNodeCallbacks.onNewMsg
+     * @see IncomingCrolangNodesCallbacks.onNewStringMsg
+     * @see OutgoingCrolangNodeCallbacks.onNewStringMsg
      */
-    fun send(channel: String, msg: String): Boolean {
-        return abstractNode.sendP2PMsg(channel, msg)
+    fun sendString(channel: String, msg: String = ""): Boolean {
+        return abstractNode.sendP2PMsg(channel, P2PMsgTypes.STRING_USER_MSG, msg.encodeToByteArray())
     }
 
     /**
-     * Sends an empty P2P message to the remote Node in the specified channel.
+     * Sends a P2P message to the remote Node in the specified channel.
      *
      * @param channel The channel to send the message to.
+     * @param msg The message to send as a ByteArray.
      *
      * @return true if the message was sent successfully, false otherwise.
      *
-     * @see IncomingCrolangNodesCallbacks.onNewMsg
-     * @see OutgoingCrolangNodeCallbacks.onNewMsg
+     * @see IncomingCrolangNodesCallbacks.onNewByteArrayMsg
+     * @see OutgoingCrolangNodeCallbacks.onNewByteArrayMsg
      */
-    fun send(channel: String): Boolean {
-        return abstractNode.sendP2PMsg(channel, "")
+    fun sendBytes(channel: String, msg: ByteArray): Boolean {
+        return abstractNode.sendP2PMsg(channel, P2PMsgTypes.BYTE_USER_MSG, msg)
     }
 
     /**

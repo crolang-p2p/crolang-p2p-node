@@ -18,6 +18,7 @@ package internal.dependencies
 
 import internal.dependencies.event_loop.EventLoop
 import internal.dependencies.socket.CrolangP2PSocketCreator
+import internal.dependencies.strings_deserialization.MemoryCrashStringDetector
 import internal.dependencies.webrtc.contracts.CrolangP2PPeerConnectionFactory
 import internal.dependencies.utils.ExecutorProvider
 import internal.dependencies.utils.SleepProvider
@@ -42,6 +43,7 @@ import internal.dependencies.utils.UUIDGenerator
  * @property timerProvider Provider for creating and managing timers
  * @property sleepProvider Provider for implementing platform-specific sleep operations
  * @property executorProvider Provider for executing operations on different threads/coroutines
+ * @property memoryCrashStringDetector Detector for identifying memory crash strings in messages
  */
 class DependenciesInjection(
     val myPlatform: String,
@@ -54,4 +56,5 @@ class DependenciesInjection(
     val timerProvider: TimerProvider,
     val sleepProvider: SleepProvider,
     val executorProvider: ExecutorProvider,
+    val memoryCrashStringDetector: MemoryCrashStringDetector
 )

@@ -14,21 +14,11 @@
  * limitations under the License.
  */
 
-package internal.events.data.abstractions
+package org.crolangP2P.java.byte_array_msg;
 
-/**
- * P2PMsgTypes contains constants representing different types of peer-to-peer messages.
- */
-internal object P2PMsgTypes {
+import org.crolangP2P.CrolangNode;
 
-    /**
-     * String message sent by the user.
-     */
-    const val STRING_USER_MSG = "STRING_USER_MSG"
+public interface OnNewCompleteMsgReceived {
 
-    /**
-     * Byte array message sent by the user.
-     */
-    const val BYTE_USER_MSG = "BYTE_USER_MSG"
-
+    void onNewCompleteMsgReceived(CrolangNode node, Integer msgId, byte[] msg);
 }

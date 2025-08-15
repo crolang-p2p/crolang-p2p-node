@@ -43,17 +43,31 @@ class CrolangNodeJs internal constructor(private val node: CrolangNode) {
     val version: String = node.version
 
     /**
-     * Sends a message to the remote node on the specified channel.
+     * Sends a string message to the remote node on the specified channel.
      * 
      * Messages are transmitted directly over the P2P connection using WebRTC data channels.
      * Large messages are automatically split and reassembled on the receiving end.
      * 
      * @param channel The message channel to send on
-     * @param msg The message content to send
+     * @param msg The string message content to send
      * @return true if the message was queued for sending, false otherwise
      */
-    fun send(channel: String, msg: String): Boolean {
-        return node.send(channel, msg)
+    fun sendString(channel: String, msg: String): Boolean {
+        return node.sendString(channel, msg)
+    }
+
+    /**
+     * Sends a byte array message to the remote node on the specified channel.
+     *
+     * This method allows sending binary data directly over the P2P connection.
+     * The data is sent as a single message, without automatic splitting.
+     *
+     * @param channel The message channel to send on
+     * @param msg The byte array content to send
+     * @return true if the message was queued for sending, false otherwise
+     */
+    fun sendBytes(channel: String, msg: ByteArray): Boolean {
+        return node.sendBytes(channel, msg)
     }
 
     /**

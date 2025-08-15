@@ -402,7 +402,6 @@ object CrolangP2PJvm {
          *
          * @see OutgoingCrolangNodeCallbacks
          * @see ConnectionAttempt
-         * @see CrolangNodeConnectionResult
          * @see P2PConnectionFailedError
          */
         @JvmStatic

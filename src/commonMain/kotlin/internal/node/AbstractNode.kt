@@ -32,8 +32,8 @@ import internal.events.data.abstractions.P2PMsgTypes
 import internal.events.data.abstractions.SocketResponses
 import internal.events.data.adapters.IceCandidateAdapter
 import internal.utils.BrokerMsgExtractor.extractMessageFromPayload
-import internal.utils.SharedStore
 import internal.utils.SharedStore.cborParser
+import internal.utils.SharedStore.dependencies
 import internal.utils.SharedStore.executeCallbackOnExecutor
 import internal.utils.SharedStore.localNodeId
 import internal.utils.SharedStore.logger
@@ -90,7 +90,7 @@ internal abstract class AbstractNode(
     val peer: CrolangP2PRTCPeerConnection = createPeer(rtcConfiguration)
     var dataChannel: CrolangP2PRTCDataChannel? = null
     val connectionTimeoutTimer = TimeoutTimer(settings.p2pConnectionTimeoutMillis){
-        SharedStore.dependencies!!.eventLoop.postEvent(concreteNodeEventParameters.onConnectionAttemptTimeout())
+        dependencies!!.eventLoop.postEvent(concreteNodeEventParameters.onConnectionAttemptTimeout())
     }
     private var nextP2PMsgSentId = 0
     private val incomingMultipartP2PMsgs: MutableMap<Int, IncomingMultipartP2PMsg> = mutableMapOf()
@@ -196,7 +196,7 @@ internal abstract class AbstractNode(
     fun sendIceCandidatesExchangeMsg(type: String, msg: ParsableIceCandidateMsg){
         sendSocketMsg(type, msg){ response ->
             if(!SocketResponses.isOk(response)){
-                SharedStore.dependencies!!.eventLoop.postEvent(
+                dependencies!!.eventLoop.postEvent(
                     concreteNodeEventParameters.onP2PIceCandidatesExchangeMsgBrokerNegativeResponseReceived()
                 )
             }
@@ -212,21 +212,39 @@ internal abstract class AbstractNode(
      * @return The new WebRTC peer connection.
      */
     private fun createPeer(rtcConfiguration: CrolangP2PRTCConfiguration): CrolangP2PRTCPeerConnection {
-        return SharedStore.dependencies!!.crolangP2PPeerConnectionFactory.createPeerConnection(
+        return dependencies!!.crolangP2PPeerConnectionFactory.createPeerConnection(
             rtcConfiguration,
             onIceCandidate = {
                 val msg = ParsableIceCandidateMsg()
-                msg.platformFrom = SharedStore.dependencies!!.myPlatform
-                msg.versionFrom = SharedStore.dependencies!!.myVersion
+                msg.platformFrom = dependencies!!.myPlatform
+                msg.versionFrom = dependencies!!.myVersion
                 msg.to = remoteNodeId
                 msg.from = localNodeId
                 msg.sessionId = sessionId
                 msg.candidate = IceCandidateAdapter.adaptConcrete(it)
-                SharedStore.dependencies!!.eventLoop.postEvent(concreteNodeEventParameters.onIceCandidateReadyToBeSent(msg))
+                dependencies!!.eventLoop.postEvent(concreteNodeEventParameters.onIceCandidateReadyToBeSent(msg))
             },
-            onConnectionChange = { SharedStore.dependencies!!.eventLoop.postEvent(concreteNodeEventParameters.onConnectionStateChange(it)) },
+            onConnectionChange = { dependencies!!.eventLoop.postEvent(concreteNodeEventParameters.onConnectionStateChange(it)) },
             onDataChannel = { it.registerObserver(newDataChannelRemotelyCreatedObserver(it)) }
         )
+    }
+
+    /**
+     * Checks if the user has defined callbacks for the channel of the received message part.
+     * If no callbacks are defined, the message part is ignored.
+     *
+     * @param peerMsgPart The message part to check.
+     * @return True if the user did not define callbacks for this channel, false otherwise.
+     */
+    private fun userDidNotDefineCallbacksForThisChanel(peerMsgPart: PeerMsgPart): Boolean {
+        return when (peerMsgPart.msgType) {
+            P2PMsgTypes.STRING_USER_MSG -> userDefinedCallbacks.onNewStringMsg[peerMsgPart.channel] == null
+            P2PMsgTypes.BYTE_USER_MSG -> userDefinedCallbacks.onNewByteArrayMsg[peerMsgPart.channel] == null
+            else -> {
+                logger.debugErr("received P2P message part of unknown type ${peerMsgPart.msgType} from node $remoteNodeId, ignoring it")
+                true
+            }
+        }
     }
 
     /**
@@ -238,8 +256,12 @@ internal abstract class AbstractNode(
         if(msgPart.total <= 0){
             logger.regularErr("received P2P message part with invalid total from node $remoteNodeId")
         } else if(msgPart.total == 1){
-            logger.debugInfo("received single-part P2P message from node $remoteNodeId (msg id: ${msgPart.msgId})")
-            handleCompleteMsg(PeerMsg(msgPart.msgType, msgPart.msgId, msgPart.channel, msgPart.payload))
+            if(userDidNotDefineCallbacksForThisChanel(msgPart)){
+                logger.regularErr("received single-part P2P message on channel ${msgPart.channel} from node $remoteNodeId but no user-defined callbacks were defined for this channel, discarding msg")
+            } else {
+                logger.debugInfo("received single-part P2P message from node $remoteNodeId (msg id: ${msgPart.msgId})")
+                handleCompleteMsg(PeerMsg(msgPart.msgType, msgPart.msgId, msgPart.channel, msgPart.payload))
+            }
         } else {
             logger.debugInfo("received part ${msgPart.part}/${msgPart.total} of P2P multipart message from node $remoteNodeId (msg id: ${msgPart.msgId})")
             handleMultipartMsg(msgPart)
@@ -254,16 +276,18 @@ internal abstract class AbstractNode(
     private fun handleMultipartMsg(peerMsgPart: PeerMsgPart){
         val existingIncomingMultipartMsg = incomingMultipartP2PMsgs[peerMsgPart.msgId]
         if(existingIncomingMultipartMsg == null){
-            if(peerMsgPart.part == 0){
+            if(peerMsgPart.part != 0){
+                logger.debugErr("received part ${peerMsgPart.part} of P2P message from node $remoteNodeId (msg id: ${peerMsgPart.msgId}) but it is not the first part, discarding msg")
+            } else if (userDidNotDefineCallbacksForThisChanel(peerMsgPart)){
+                logger.regularErr("received first part (part: 0) of P2P message (tot: ${peerMsgPart.total}) from node $remoteNodeId (msg id: ${peerMsgPart.msgId}) on channel ${peerMsgPart.channel} but no user-defined callbacks were defined for this channel, discarding msg")
+            } else {
                 logger.debugInfo("received first part (part: 0) of P2P message (tot: ${peerMsgPart.total}) from node $remoteNodeId (msg id: ${peerMsgPart.msgId}) on channel ${peerMsgPart.channel}, creating new IncomingMultipartP2PMsg")
                 incomingMultipartP2PMsgs[peerMsgPart.msgId] = IncomingMultipartP2PMsg(
-                    peerMsgPart, settings.multipartP2PMessageTimeoutMillis
+                    crolangNode, peerMsgPart, userDefinedCallbacks, settings.multipartP2PMessageTimeoutMillis
                 ){
                     incomingMultipartP2PMsgs.remove(peerMsgPart.msgId)
                     logger.debugErr("timeout on receiving P2P message from CrolangNode $remoteNodeId with msg id ${peerMsgPart.msgId}")
                 }
-            } else {
-                logger.debugErr("received part ${peerMsgPart.part} of P2P message from node $remoteNodeId (msg id: ${peerMsgPart.msgId}) but it is not the first part, discarding msg")
             }
         } else if(existingIncomingMultipartMsg.isPartToDeposit(peerMsgPart)) {
             logger.debugInfo("depositing part ${peerMsgPart.part} (tot: ${peerMsgPart.total}) of P2P message from node $remoteNodeId (msg id: ${peerMsgPart.msgId}) into existing IncomingMultipartP2PMsg")
@@ -280,6 +304,13 @@ internal abstract class AbstractNode(
             existingIncomingMultipartMsg.cancelTimer()
             incomingMultipartP2PMsgs.remove(peerMsgPart.msgId)
             logger.debugErr("received out of order part ${peerMsgPart.part} of P2P message from node $remoteNodeId (msg id: ${peerMsgPart.msgId}), discarding msg")
+            if(peerMsgPart.msgType == P2PMsgTypes.BYTE_USER_MSG){
+                userDefinedCallbacks.onNewByteArrayMsg[peerMsgPart.channel]?.onMsgCorruption?.let {
+                    executeCallbackOnExecutor {
+                        it(crolangNode, peerMsgPart.msgId)
+                    }
+                }
+            }
         }
     }
 
@@ -288,15 +319,21 @@ internal abstract class AbstractNode(
      * The message is logged and then passed to the appropriate callback defined by the user, if it is a p2p user msg.
      */
     private fun handleCompleteMsg(peerMsg: PeerMsg){
-        if(peerMsg.msgType == P2PMsgTypes.USER_MSG){
-            logger.regularInfo("received P2P message from node $remoteNodeId on channel ${peerMsg.channel}: ${peerMsg.payload}")
-            val channelCallback = userDefinedCallbacks.onNewMsg[peerMsg.channel]
-            if(channelCallback != null){
-                executeCallbackOnExecutor {
-                    channelCallback(this.crolangNode, peerMsg.payload)
-                }
+        if(peerMsg.msgType == P2PMsgTypes.STRING_USER_MSG){
+            logger.regularInfo("received P2P string message from node $remoteNodeId on channel ${peerMsg.channel}: ${peerMsg.payload}")
+            if (dependencies!!.memoryCrashStringDetector.preventIncomingByteArrayFromCausingMemoryCrashInStringParsing(peerMsg.payload)) {
+                logger.regularErr("received P2P message too large (${peerMsg.payload.size} bytes) on channel ${peerMsg.channel} from node $remoteNodeId - skipping string conversion to avoid memory crash")
             } else {
-                logger.regularErr("received P2P message on unknown channel ${peerMsg.channel} from node $remoteNodeId")
+                executeCallbackOnExecutor {
+                    //the callback exists, so we can safely call it
+                    userDefinedCallbacks.onNewStringMsg[peerMsg.channel]!!(this.crolangNode, peerMsg.payload.decodeToString())
+                }
+            }
+        } else if (peerMsg.msgType == P2PMsgTypes.BYTE_USER_MSG){
+            logger.regularInfo("received P2P byte message from node $remoteNodeId on channel ${peerMsg.channel}")
+            executeCallbackOnExecutor {
+                //the callback exists, so we can safely call it
+                userDefinedCallbacks.onNewByteArrayMsg[peerMsg.channel]!!.onNewCompleteMsgReceived(this.crolangNode, peerMsg.msgId, peerMsg.payload)
             }
         } else {
             logger.debugErr("received P2P message of unknown type ${peerMsg.msgType} from node $remoteNodeId, ignoring it")
@@ -309,19 +346,19 @@ internal abstract class AbstractNode(
      * The message will be recomposed on the remote node.
      */
     @OptIn(ExperimentalSerializationApi::class)
-    fun sendP2PMsg(channel: String, msg: String): Boolean {
+    fun sendP2PMsg(channel: String, type: String, msg: ByteArray): Boolean {
         if(state != NodeState.CONNECTED || dataChannel == null || dataChannel!!.state() != CrolangP2PRTCDataChannelState.OPEN){
             logger.regularErr("attempted to send message to CrolangNode $remoteNodeId that is not connected")
             return false
         }
-        logger.regularInfo("sending P2P message to CrolangNode $remoteNodeId: $msg")
-        val peerMsg = PeerMsg(P2PMsgTypes.USER_MSG, nextP2PMsgSentId++, channel, msg)
+        //logger.regularInfo("sending P2P message to CrolangNode $remoteNodeId: $msg")
+        val peerMsg = PeerMsg(type, nextP2PMsgSentId++, channel, msg)
         val parts: List<PeerMsgPartParsable>  = peerMsg.splitIntoParts(DEFAULT_PAYLOAD_SIZE_BYTES)
         logger.debugInfo("split P2P message to $remoteNodeId (msg id: ${peerMsg.msgId}) into ${parts.size} parts")
         val dataChannelInstance = dataChannel!!
         if(parts.size == 1){
             while(dataChannelInstance.bufferedAmount() > MAX_BUFFERED_AMOUNT) {
-                SharedStore.dependencies!!.sleepProvider.sleep(1)
+                dependencies!!.sleepProvider.sleep(1)
             }
             dataChannel!!.send(cborParser.encodeToByteArray(PeerMsgPartParsable.serializer(), parts[0]))
             logger.debugInfo("sent single part P2P message to $remoteNodeId (msg id: ${peerMsg.msgId})")
@@ -329,7 +366,7 @@ internal abstract class AbstractNode(
             parts.forEach {
                 val byteArray = cborParser.encodeToByteArray(PeerMsgPartParsable.serializer(), it)
                 while(dataChannelInstance.bufferedAmount() > MAX_BUFFERED_AMOUNT) {
-                    SharedStore.dependencies!!.sleepProvider.sleep(1)
+                    dependencies!!.sleepProvider.sleep(1)
                 }
                 logger.debugInfo("sending part ${it.part}/${it.total} of P2P message to $remoteNodeId (msg id: ${peerMsg.msgId})")
                 dataChannelInstance.send(byteArray)

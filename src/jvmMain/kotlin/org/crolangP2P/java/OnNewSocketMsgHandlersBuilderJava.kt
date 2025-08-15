@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package org.crolangP2P
-import kotlin.Unit
+package org.crolangP2P.java
 
 /**
- * Builder for compact creation of handler maps for P2P onNewMsg, usable from Java.
+ * Builder for compact creation of handler maps for WebSocket onNewMsg, usable from Java.
  * <p>
  * Allows adding handlers for different channels via the {@code add} method.
  */
-class OnNewP2PMsgHandlersBuilder private constructor() {
-    private val handlers = mutableMapOf<String, Function2<CrolangNode, String, Unit>>()
+class OnNewSocketMsgHandlersBuilderJava private constructor() {
+
+    private val handlers = mutableMapOf<String, Function2<String, String, Unit>>()
 
     /**
      * Adds a handler for a channel, accepting a Java lambda (BiConsumer) with no return value.
      * @param channel the channel name
-     * @param handler BiConsumer<CrolangNode, String> (node, msg) -> void
+     * @param handler BiConsumer<String, String> (socketId, msg) -> void
      * @return this builder
      */
-    fun add(channel: String, handler: java.util.function.BiConsumer<CrolangNode, String>): OnNewP2PMsgHandlersBuilder {
-        handlers[channel] = object : Function2<CrolangNode, String, Unit> {
-            override fun invoke(node: CrolangNode, msg: String) {
-                handler.accept(node, msg)
+    fun add(channel: String, handler: java.util.function.BiConsumer<String, String>): OnNewSocketMsgHandlersBuilderJava {
+        handlers[channel] = object : Function2<String, String, Unit> {
+            override fun invoke(socketId: String, msg: String) {
+                handler.accept(socketId, msg)
             }
         }
         return this
@@ -43,7 +43,7 @@ class OnNewP2PMsgHandlersBuilder private constructor() {
     /**
      * Returns the final channel -> handler map to use in onNewMsg.
      */
-    fun build(): Map<String, Function2<CrolangNode, String, Unit>> = handlers
+    fun build(): Map<String, Function2<String, String, Unit>> = handlers
 
     /**
      * Companion object providing factory methods for creating builder instances.
@@ -52,9 +52,10 @@ class OnNewP2PMsgHandlersBuilder private constructor() {
         /**
          * Factory method to obtain a new builder, usable from Java.
          * 
-         * @return A new OnNewP2PMsgHandlersBuilder instance
+         * @return A new OnNewSocketMsgHandlersBuilder instance
          */
         @JvmStatic
-        fun createNew(): OnNewP2PMsgHandlersBuilder = OnNewP2PMsgHandlersBuilder()
+        fun createNew(): OnNewSocketMsgHandlersBuilderJava = OnNewSocketMsgHandlersBuilderJava()
     }
+
 }

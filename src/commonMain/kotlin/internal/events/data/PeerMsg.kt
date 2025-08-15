@@ -16,9 +16,14 @@
 
 package internal.events.data
 
+import internal.events.data.abstractions.P2PMsgTypes
+import internal.utils.SharedStore.executeCallbackOnExecutor
 import internal.utils.TimeoutTimer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.crolangP2P.BasicCrolangNodeCallbacks
+import org.crolangP2P.CrolangNode
+import org.crolangP2P.IncomingByteArrayMsgCallbacks
 import kotlin.math.ceil
 import kotlin.math.min
 
@@ -34,7 +39,7 @@ internal open class PeerMsg(
     val msgType: String,
     val msgId: Int,
     val channel: String,
-    val payload: String
+    val payload: ByteArray
 ) {
     /**
      * Splits the payload of the message into smaller chunks to avoid WebRTC size limitations.
@@ -43,7 +48,7 @@ internal open class PeerMsg(
      * @return A list of PeerMsgPartParsable objects representing the message parts.
      */
     fun splitIntoParts(payloadSizeBytes: Int): List<PeerMsgPartParsable> {
-        val payloadLen = payload.length
+        val payloadLen = payload.size
         val totalParts: Int = ceil(payloadLen.toDouble() / payloadSizeBytes).toInt()
         if(payload.isEmpty() || totalParts == 1){
             val part = PeerMsgPartParsable()
@@ -65,7 +70,7 @@ internal open class PeerMsg(
 
                 // extracts a chunk of the payload calculating the start and end of the chunk
                 val chunkStart = i * payloadSizeBytes
-                part.payload = payload.substring(chunkStart, min(chunkStart + payloadSizeBytes, payloadLen))
+                part.payload = payload.sliceArray(chunkStart until min(chunkStart + payloadSizeBytes, payloadLen))
 
                 part
             }
@@ -87,7 +92,7 @@ internal class PeerMsgPart(
     msgType: String,
     msgId: Int,
     channel: String,
-    payload: String,
+    payload: ByteArray,
     val part: Int,
     val total: Int
 ) : PeerMsg(msgType, msgId, channel, payload)
@@ -108,7 +113,7 @@ internal class PeerMsgPartParsable {
     @SerialName("msgType") var msgType: String? = null
     @SerialName("msgId") var msgId: Int? = null
     @SerialName("channel") var channel: String? = null
-    @SerialName("payload") var payload: String? = null
+    @SerialName("payload") var payload: ByteArray? = null
     @SerialName("part") var part: Int? = null
     @SerialName("total") var total: Int? = null
 
@@ -129,18 +134,22 @@ internal class PeerMsgPartParsable {
 /**
  * IncomingMultipartP2PMsg manages a message that has been split into multiple parts and received over peer-to-peer.
  *
+ * @param crolangNode The CrolangNode instance that is receiving the message.
  * @param firstMsgPart The first part of the message received.
  * @param timeoutMs The timeout in milliseconds for receiving subsequent parts.
+ * @param userDefinedCallbacks The user-defined callbacks for handling events related to the message.
  * @param onTimeoutCallback The function to be executed when the timeout expires.
  */
 internal class IncomingMultipartP2PMsg(
-    firstMsgPart: PeerMsgPart,
-    timeoutMs: Int,
-    onTimeoutCallback: () -> Unit
+    private val crolangNode: CrolangNode,
+    private val firstMsgPart: PeerMsgPart,
+    private val userDefinedCallbacks: BasicCrolangNodeCallbacks,
+    private val timeoutMs: Int,
+    private val onTimeoutCallback: () -> Unit
 ) {
 
     private val timeoutTimer = TimeoutTimer(timeoutMs) {
-        if (gathered.size < total) {
+        if (receivedPartsCount < total) {
             onTimeoutCallback()
         }
     }
@@ -150,10 +159,24 @@ internal class IncomingMultipartP2PMsg(
     private val channel: String = firstMsgPart.channel
     private val total: Int = firstMsgPart.total
     private val totalCheck: Int = firstMsgPart.total - 1
-    private val gathered: ArrayList<String> = ArrayList(firstMsgPart.total)
+    private val byteArrayMsgCallbacks: IncomingByteArrayMsgCallbacks?
+    
+    // Use chunks approach: avoid massive JavaScript arrays
+    private val chunks = mutableListOf<ByteArray>()
+    private var receivedPartsCount = 1
 
     init {
-        gathered.add(firstMsgPart.payload)
+        chunks.add(firstMsgPart.payload)
+        if(firstMsgPart.msgType == P2PMsgTypes.BYTE_USER_MSG){
+            byteArrayMsgCallbacks = userDefinedCallbacks.onNewByteArrayMsg[channel]
+            if(byteArrayMsgCallbacks != null){
+                executeCallbackOnExecutor{
+                    byteArrayMsgCallbacks.onNewMsgPartReceived(crolangNode, msgId, 1, total)
+                }
+            }
+        } else {
+            byteArrayMsgCallbacks = null
+        }
     }
 
     fun cancelTimer() {
@@ -167,7 +190,7 @@ internal class IncomingMultipartP2PMsg(
      * @return true if the part has already been deposited, otherwise false.
      */
     fun isPartToDeposit(part: PeerMsgPart): Boolean {
-        return gathered.size == part.part
+        return receivedPartsCount == part.part
     }
 
     /**
@@ -178,30 +201,32 @@ internal class IncomingMultipartP2PMsg(
      *         null if all parts are not yet received.
      */
     fun depositNewPart(part: PeerMsgPart): MsgPartsMergeResult? {
-        gathered.add(part.payload)
-        return if (part.part != totalCheck) {
-            null
-        } else {
-            timeoutTimer.cancel()
-            mergeParts()
-        }
-    }
+        chunks.add(part.payload)
+        receivedPartsCount++
 
-    /**
-     * Merges all received parts into a single message.
-     *
-     * @return The result of merging the parts, which indicates if there was an error or if the message was successfully
-     * reconstructed.
-     */
-    private fun mergeParts(): MsgPartsMergeResult {
-        return if (gathered.size == total) {
-            val finalPayload = StringBuilder()
-            for (part in gathered) {
-                finalPayload.append(part)
+        return if (part.part == totalCheck) {
+            timeoutTimer.cancel()
+
+            // Calculate total size and assemble directly as ByteArray
+            val totalSize = chunks.sumOf { it.size }
+            val finalBytes = ByteArray(totalSize)
+            var offset = 0
+            for (chunk in chunks) {
+                chunk.copyInto(finalBytes, offset)
+                offset += chunk.size
             }
-            MsgPartsMergeResult(false, PeerMsg(mstType, msgId, channel, finalPayload.toString()))
+
+            // Clear chunks immediately to free memory
+            chunks.clear()
+
+            MsgPartsMergeResult(false, PeerMsg(mstType, msgId, channel, finalBytes))
         } else {
-            MsgPartsMergeResult(true, null)
+            byteArrayMsgCallbacks?.let { callback ->
+                executeCallbackOnExecutor {
+                    callback.onNewMsgPartReceived(crolangNode, msgId, part.part + 1, total)
+                }
+            }
+            null
         }
     }
 

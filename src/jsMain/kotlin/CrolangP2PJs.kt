@@ -24,10 +24,10 @@ import org.crolangP2P.BrokerLifecycleCallbacks
 import org.crolangP2P.CoreCrolangP2PFacade
 import org.crolangP2P.CrolangNode
 import org.crolangP2P.CrolangSettings
+import org.crolangP2P.IncomingByteArrayMsgCallbacks
 import org.crolangP2P.IncomingCrolangNodesCallbacks
 import org.crolangP2P.LoggingOptions
 import org.crolangP2P.OutgoingCrolangNodeCallbacks
-import org.crolangP2P.errors.P2PConnectionFailedError
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -250,8 +250,21 @@ object CrolangP2PJs {
                         id, P2PConnectionFailedErrorJS.fromInternal(reason)
                     ) },
                     onDisconnection = callbacks.getOnDisconnection(),
-                    onNewMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
+                    onNewStringMsg = callbacks.getOnNewStringMsgCallbacks().mapValues { (_, callback) ->
                         { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
+                    },
+                    onNewByteArrayMsg = callbacks.getOnNewByteArrayMsgCallbacks().mapValues {
+                        (_, callback) -> IncomingByteArrayMsgCallbacks(
+                            onNewMsgPartReceived = { node: CrolangNode, msgId: Int, part: Int, total: Int ->
+                                callback.onNewMsgPartReceived(CrolangNodeJs(node), msgId, part, total)
+                            },
+                            onNewCompleteMsgReceived = { node: CrolangNode, msgId: Int, msg: ByteArray ->
+                                callback.onNewCompleteMsgReceived(CrolangNodeJs(node), msgId, msg)
+                            },
+                            onMsgCorruption = { node: CrolangNode, msgId: Int ->
+                                callback.onMsgCorruption(CrolangNodeJs(node), msgId)
+                            }
+                        )
                     }
                 ),
                 onSuccess = { continuation.resume(CrolangP2PJs) },
@@ -319,8 +332,21 @@ object CrolangP2PJs {
                 onConnectionFailedId, P2PConnectionFailedErrorJS.fromInternal(reason)
             ) },
             onDisconnection = callbacks.getOnDisconnection(),
-            onNewMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
+            onNewStringMsg = callbacks.getOnNewMsgCallbacks().mapValues { (_, callback) ->
                 { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
+            },
+            onNewByteArrayMsg = callbacks.getOnNewByteArrayMsgCallbacks().mapValues {
+                (_, callback) -> IncomingByteArrayMsgCallbacks(
+                    onNewMsgPartReceived = { node: CrolangNode, msgId: Int, part: Int, total: Int ->
+                        callback.onNewMsgPartReceived(CrolangNodeJs(node), msgId, part, total)
+                    },
+                    onNewCompleteMsgReceived = { node: CrolangNode, msgId: Int, msg: ByteArray ->
+                        callback.onNewCompleteMsgReceived(CrolangNodeJs(node), msgId, msg)
+                    },
+                    onMsgCorruption = { node: CrolangNode, msgId: Int ->
+                        callback.onMsgCorruption(CrolangNodeJs(node), msgId)
+                    }
+                )
             }
         )))
     }
@@ -348,8 +374,21 @@ object CrolangP2PJs {
                     id, P2PConnectionFailedErrorJS.fromInternal(reason)
                 ) },
                 onDisconnection = target.value.getOnDisconnection(),
-                onNewMsg = target.value.getOnNewMsgCallbacks().mapValues { (_, callback) ->
+                onNewStringMsg = target.value.getOnNewMsgCallbacks().mapValues { (_, callback) ->
                     { node: CrolangNode, msg: String -> callback(CrolangNodeJs(node), msg) }
+                },
+                onNewByteArrayMsg = target.value.getOnNewByteArrayMsgCallbacks().mapValues {
+                    (_, callback) -> IncomingByteArrayMsgCallbacks(
+                        onNewMsgPartReceived = { node: CrolangNode, msgId: Int, part: Int, total: Int ->
+                            callback.onNewMsgPartReceived(CrolangNodeJs(node), msgId, part, total)
+                        },
+                        onNewCompleteMsgReceived = { node: CrolangNode, msgId: Int, msg: ByteArray ->
+                            callback.onNewCompleteMsgReceived(CrolangNodeJs(node), msgId, msg)
+                        },
+                        onMsgCorruption = { node: CrolangNode, msgId: Int ->
+                            callback.onMsgCorruption(CrolangNodeJs(node), msgId)
+                        }
+                    )
                 }
             ) },
             onConnectionAttemptConcluded = { connected, failed ->

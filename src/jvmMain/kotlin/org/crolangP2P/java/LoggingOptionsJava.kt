@@ -21,7 +21,7 @@ import org.crolangP2P.LoggingOptions
 /**
  * Java-friendly builder pattern for [LoggingOptions].
  */
-class JavaLoggingOptions {
+class LoggingOptionsJava {
     
     /**
      * Factory methods for creating JavaLoggingOptions instances.
@@ -31,7 +31,7 @@ class JavaLoggingOptions {
          * Creates a new builder instance.
          */
         @JvmStatic
-        fun builder(): JavaLoggingOptions = JavaLoggingOptions()
+        fun builder(): LoggingOptionsJava = LoggingOptionsJava()
     }
     
     private var enableBaseLogging: Boolean = false

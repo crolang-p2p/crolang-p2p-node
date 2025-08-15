@@ -22,7 +22,7 @@ import org.crolangP2P.InvoluntaryBrokerDisconnectionCause
 /**
  * Java-friendly builder pattern for [BrokerLifecycleCallbacks].
  */
-class JavaBrokerLifecycleCallbacks {
+class BrokerLifecycleCallbacksJava {
     
     /**
      * Factory methods for creating JavaBrokerLifecycleCallbacks instances.
@@ -32,7 +32,7 @@ class JavaBrokerLifecycleCallbacks {
          * Creates a new builder instance.
          */
         @JvmStatic
-        fun builder(): JavaBrokerLifecycleCallbacks = JavaBrokerLifecycleCallbacks()
+        fun builder(): BrokerLifecycleCallbacksJava = BrokerLifecycleCallbacksJava()
     }
     
     private var onInvoluntaryDisconnection: (InvoluntaryBrokerDisconnectionCause) -> Unit = {}

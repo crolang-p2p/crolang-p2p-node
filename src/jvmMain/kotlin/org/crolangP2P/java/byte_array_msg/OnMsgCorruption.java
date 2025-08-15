@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package org.crolangP2P
+package org.crolangP2P.java.byte_array_msg;
 
-import org.crolangP2P.errors.P2PConnectionFailedError
-import java.util.Optional
+import org.crolangP2P.CrolangNode;
 
-/**
- * Represents the result of a connection attempt to a Crolang node.
- *
- * @property node The connected Crolang node, if the connection was successful.
- * @property exception The reason for the connection failure, if applicable.
- *
- * @see CrolangP2PJvm.Java.connectToMultipleNodesSync
- * @see CrolangP2PJvm.Java.connectToMultipleNodes
- */
-class CrolangNodeConnectionResult(
-    val node: Optional<CrolangNode>,
-    val exception: Optional<P2PConnectionFailedError>
-)
+public interface OnMsgCorruption {
+
+    void onMsgCorruption(CrolangNode node, Integer msgId);
+
+}

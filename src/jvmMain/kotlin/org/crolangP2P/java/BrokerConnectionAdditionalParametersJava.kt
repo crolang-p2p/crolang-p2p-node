@@ -24,7 +24,7 @@ import org.crolangP2P.LoggingOptions
 /**
  * Java-friendly builder pattern for [BrokerConnectionAdditionalParameters].
  */
-class JavaBrokerConnectionAdditionalParameters {
+class BrokerConnectionAdditionalParametersJava {
     
     /**
      * Factory methods for creating JavaBrokerConnectionAdditionalParameters instances.
@@ -34,7 +34,7 @@ class JavaBrokerConnectionAdditionalParameters {
          * Creates a new builder instance.
          */
         @JvmStatic
-        fun builder(): JavaBrokerConnectionAdditionalParameters = JavaBrokerConnectionAdditionalParameters()
+        fun builder(): BrokerConnectionAdditionalParametersJava = BrokerConnectionAdditionalParametersJava()
     }
     
     private var lifecycleCallbacks: BrokerLifecycleCallbacks = BrokerLifecycleCallbacks()

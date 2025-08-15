@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package internal.events.data.abstractions
+package internal.dependencies_injection.strings_deserialization
+
+import internal.dependencies.strings_deserialization.MemoryCrashStringDetector
 
 /**
- * P2PMsgTypes contains constants representing different types of peer-to-peer messages.
+ * MemoryCrashStringDetectorJs is a JavaScript implementation of the MemoryCrashStringDetector interface.
+ * It prevents memory crashes when parsing strings from incoming byte arrays by checking the size of the payload.
  */
-internal object P2PMsgTypes {
+internal class MemoryCrashStringDetectorJs: MemoryCrashStringDetector {
 
-    /**
-     * String message sent by the user.
-     */
-    const val STRING_USER_MSG = "STRING_USER_MSG"
-
-    /**
-     * Byte array message sent by the user.
-     */
-    const val BYTE_USER_MSG = "BYTE_USER_MSG"
+    override fun preventIncomingByteArrayFromCausingMemoryCrashInStringParsing(payload: ByteArray): Boolean {
+        return payload.size > 100_000_000 // 100 MB limit
+    }
 
 }
