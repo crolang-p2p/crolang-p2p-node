@@ -18,11 +18,11 @@ package org.crolangP2P.java
 
 import org.crolangP2P.IncomingByteArrayMsgCallbacks
 
-class OnNewP2PByteArrayMsgHandlersBuilterJava private constructor(){
+class OnNewP2PByteArrayMsgHandlersBuilderJava private constructor(){
 
     private val handlers = mutableMapOf<String, IncomingByteArrayMsgCallbacks>()
 
-    fun add(channel: String, handler: IncomingByteArrayMsgCallbacks): OnNewP2PByteArrayMsgHandlersBuilterJava {
+    fun add(channel: String, handler: IncomingByteArrayMsgCallbacks): OnNewP2PByteArrayMsgHandlersBuilderJava {
         handlers[channel] = handler
         return this
     }
@@ -31,6 +31,6 @@ class OnNewP2PByteArrayMsgHandlersBuilterJava private constructor(){
 
     companion object {
         @JvmStatic
-        fun createNew(): OnNewP2PByteArrayMsgHandlersBuilterJava = OnNewP2PByteArrayMsgHandlersBuilterJava()
+        fun createNew(): OnNewP2PByteArrayMsgHandlersBuilderJava = OnNewP2PByteArrayMsgHandlersBuilderJava()
     }
 }
